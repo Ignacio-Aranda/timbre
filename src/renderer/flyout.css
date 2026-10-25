@@ -88,6 +88,13 @@ body.mica.fly-body {
   background: var(--control-hover);
   color: var(--text);
 }
+.iconbtn:active {
+  background: var(--control-active);
+}
+.iconbtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
 .iconbtn .ico {
   width: 18px;
   height: 18px;
@@ -167,14 +174,40 @@ body.mica.fly-body {
 .fly-device__actions [data-camera] {
   flex: 1 1 100%;
 }
+/* Door actions read as buttons, not links: give them a surface. */
+.fly-device__actions .btn--subtle {
+  background: var(--control);
+  border-color: var(--stroke-strong);
+}
+.fly-device__actions .btn--subtle:hover {
+  background: var(--control-hover);
+}
+.fly-device__actions .btn--subtle:active {
+  background: var(--control-active);
+  color: var(--text-2);
+}
 
 .fly-empty {
   text-align: center;
   color: var(--text-2);
-  padding: 40px 16px;
+  padding: 44px 20px;
+}
+.fly-empty__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  margin-bottom: 14px;
+}
+.fly-empty__mark .ico {
+  width: 23px;
+  height: 23px;
 }
 .fly-empty p {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   font-size: 13px;
 }
 
@@ -264,6 +297,10 @@ body.mica.fly-body {
 }
 .fly-back:hover {
   background: rgba(0, 0, 0, 0.65);
+}
+.fly-back:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 .fly-back .ico {
   width: 18px;

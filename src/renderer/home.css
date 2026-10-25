@@ -176,15 +176,18 @@ body.mica .side {
 }
 .device {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 12px 16px;
   padding: 14px 16px;
 }
 .device__top {
   display: flex;
   align-items: center;
   gap: 13px;
-  flex: 1;
+  /* Keep the identity readable; when the actions no longer fit beside it they
+     wrap to their own line rather than crushing the status onto two lines. */
+  flex: 1 1 300px;
   min-width: 0;
 }
 .device__icon {
@@ -227,15 +230,34 @@ body.mica .side {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  flex: none;
+  flex: 1 1 auto;
+  margin-left: auto;
+}
+/* Door/secondary actions read as buttons, not links: give them a surface. */
+.device__actions .btn--subtle {
+  background: var(--control);
+  border-color: var(--stroke-strong);
+}
+.device__actions .btn--subtle:hover {
+  background: var(--control-hover);
+}
+.device__actions .btn--subtle:active {
+  background: var(--control-active);
+  color: var(--text-2);
 }
 @media (max-width: 640px) {
   .device {
     flex-direction: column;
     align-items: stretch;
   }
+  /* In the stacked layout the basis is the main (vertical) size, so drop the
+     300px row-basis to avoid an oversized identity block. */
+  .device__top {
+    flex: 0 1 auto;
+  }
   .device__actions {
     justify-content: stretch;
+    margin-left: 0;
   }
   .device__actions .btn {
     flex: 1 1 auto;

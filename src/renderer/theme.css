@@ -175,13 +175,13 @@ h4 {
   color: var(--on-accent);
   border-color: transparent;
 }
+/* Opaque tints rather than opacity, so the fill stays solid over Mica. */
 .btn--accent:hover {
-  background: var(--accent);
-  opacity: 0.9;
+  background: color-mix(in srgb, var(--accent), #fff 12%);
 }
 .btn--accent:active {
-  opacity: 0.8;
-  color: var(--on-accent);
+  background: color-mix(in srgb, var(--accent), #000 12%);
+  color: color-mix(in srgb, var(--on-accent), transparent 15%);
 }
 .btn--subtle {
   background: transparent;
@@ -189,6 +189,10 @@ h4 {
 }
 .btn--subtle:hover {
   background: var(--control-hover);
+}
+.btn--subtle:active {
+  background: var(--control-active);
+  color: var(--text-2);
 }
 .btn--danger {
   background: #c42b1c;
@@ -245,9 +249,17 @@ h4 {
   background: var(--text);
   transition: transform 0.12s ease, background 0.12s linear, width 0.12s linear, height 0.12s linear, top 0.12s linear, left 0.12s linear;
 }
+.switch:hover .track {
+  background: var(--control-hover);
+  border-color: var(--text);
+}
 .switch input:checked ~ .track {
   background: var(--accent);
   border-color: var(--accent);
+}
+.switch input:checked:hover ~ .track {
+  background: color-mix(in srgb, var(--accent), #fff 12%);
+  border-color: color-mix(in srgb, var(--accent), #fff 12%);
 }
 .switch input:checked ~ .thumb {
   transform: translateX(20px);
