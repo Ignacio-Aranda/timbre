@@ -4,7 +4,10 @@
   "version": "0.1.0",
   "description": "Cliente de escritorio no oficial para porteros Fermax DuoxMe / Blue (Windows y Linux)",
   "main": "src/main/main.js",
-  "author": "Ignacio Aranda",
+  "author": {
+    "name": "Ignacio Aranda",
+    "email": "ignacioarandagg@gmail.com"
+  },
   "license": "MIT",
   "private": true,
   "homepage": "https://github.com/Ignacio-Aranda/timbre",
