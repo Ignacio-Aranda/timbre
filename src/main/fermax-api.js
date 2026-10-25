@@ -249,6 +249,48 @@ class FermaxApi {
     return this._request('GET', `/deviceaction/api/v1/device/${deviceId}`);
   }
 
+  // The cameras/panels reachable from a monitor. The app lists these and lets
+  // you step through them in a session; more than one means "switch camera".
+  async getPanels(deviceId) {
+    try {
+      const data = await this._request('GET', `/deviceaction/api/v1/device/${deviceId}/panels`);
+      if (!Array.isArray(data)) return [];
+      return data.map((p) => ({
+        panelId: p.serialNumber || p.panelId || '',
+        name: p.name || '',
+        block: p.numBlock,
+        subBlock: p.numSubblock,
+        number: p.unitNumber,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  // Services enabled for a device (e.g. CHANGE_VIDEO_SOURCE, CALL_DIVERT).
+  async getActiveServices(deviceId) {
+    try {
+      const data = await this._request('GET', `/services2/api/v1/services/${deviceId}`);
+      // Shape varies by account; collect any service identifiers we can find.
+      const out = new Set();
+      const walk = (v) => {
+        if (!v) return;
+        if (typeof v === 'string') out.add(v.toUpperCase());
+        else if (Array.isArray(v)) v.forEach(walk);
+        else if (typeof v === 'object') {
+          for (const [k, val] of Object.entries(v)) {
+            if (typeof val === 'boolean' && val) out.add(k.toUpperCase());
+            else walk(val);
+          }
+        }
+      };
+      walk(data);
+      return out;
+    } catch {
+      return new Set();
+    }
+  }
+
   // ----- Door opening ----------------------------------------------------
 
   async openDoor(deviceId, accessId, panelId = null) {

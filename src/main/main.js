@@ -26,6 +26,7 @@ let tray = null;
 let homeWindow = null;
 let callWindow = null;
 let pairings = [];
+let deviceExtras = new Map(); // deviceId -> { panels: [...], canSwitch: bool }
 let quitting = false;
 
 // ---------------------------------------------------------------------------
@@ -64,9 +65,31 @@ async function startServices() {
     log('No se pudieron cargar los emparejamientos: ' + err.message);
   }
 
+  await loadDeviceExtras();
   await startPush();
   updateTrayMenu();
   broadcastState();
+}
+
+// Fetch the real camera list and enabled services for each device. The number
+// of panels is what tells multi-camera installations apart; the app itself
+// shows "switch camera" when the CHANGE_VIDEO_SOURCE service is enabled.
+async function loadDeviceExtras() {
+  for (const p of pairings) {
+    try {
+      const [panels, services] = await Promise.all([
+        api.getPanels(p.deviceId),
+        api.getActiveServices(p.deviceId),
+      ]);
+      // Only hide "switch camera" when we positively know there is a single
+      // panel and no change-video service; otherwise offer it.
+      const singleKnown = panels.length === 1 && !services.has('CHANGE_VIDEO_SOURCE');
+      deviceExtras.set(p.deviceId, { panels, canSwitch: !singleKnown });
+      log(`${p.tag || p.deviceId}: ${panels.length} ${panels.length === 1 ? 'cámara' : 'cámaras'}`);
+    } catch (err) {
+      log('No se pudieron leer las cámaras de ' + (p.tag || p.deviceId) + ': ' + err.message);
+    }
+  }
 }
 
 async function startPush() {
@@ -163,7 +186,7 @@ async function buildCallInfo(n, mode) {
     conversationTimeout: n.conversationTimeout || 90,
     previewTimeout: n.previewTimeout || 30,
     deviceName,
-    canSwitchCamera: countCameras(n.deviceId) > 1,
+    canSwitchCamera: canSwitchCamera(n.deviceId),
     title: mode === 'camera' ? deviceName : n.title || 'Llamada del portero',
     body: mode === 'camera' ? 'Cámara en directo' : n.body || deviceName,
     photoDataUrl,
@@ -334,16 +357,19 @@ function activeDevice() {
   return pairings.find((p) => p.deviceId === id) || pairings[0] || null;
 }
 
-// A device with panel access doors reaches more than one camera/panel.
+// Real camera count from the device's panel list, or 0 when still unknown.
 function countCameras(deviceId) {
-  const p = deviceById(deviceId);
-  if (!p) return 1;
-  const panels = new Set(
-    Object.values(p.accessDoors)
-      .map((d) => d.panelId)
-      .filter(Boolean)
-  );
-  return Math.max(1, panels.size || 1);
+  const extra = deviceExtras.get(deviceId);
+  return extra && extra.panels.length ? extra.panels.length : 0;
+}
+
+// Whether "switch camera" should be offered. True when the panel list shows
+// more than one, or the account has the CHANGE_VIDEO_SOURCE service. Defaults
+// to true when we could not read the extras, so a working feature isn't hidden.
+function canSwitchCamera(deviceId) {
+  const extra = deviceExtras.get(deviceId);
+  if (!extra) return true;
+  return !!extra.canSwitch;
 }
 
 // The doors a user can open on a device, for the UI.
@@ -383,6 +409,7 @@ function broadcastState() {
       master: p.master,
       doors: doorsOf(p.deviceId),
       cameras: countCameras(p.deviceId),
+      canSwitch: canSwitchCamera(p.deviceId),
     })),
     activeDeviceId: stores.settings.get('activeDeviceId'),
     fcmActive: !!push?.fcmToken,

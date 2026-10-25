@@ -90,7 +90,7 @@ function renderDevices() {
           <div class="device__body">
             <div>
               <span class="device__name">${esc(name)}</span>
-              <span class="device__tag">${d.cameras > 1 ? d.cameras + ' cámaras' : '1 cámara'}${d.master ? ' · titular' : ''}</span>
+              <span class="device__tag">${d.cameras > 1 ? d.cameras + ' cámaras' : d.canSwitch ? 'Varias cámaras' : 'Cámara'}${d.master ? ' · titular' : ''}</span>
             </div>
             <div class="device__actions">
               <button class="btn btn--primary" data-camera="${esc(d.deviceId)}">${icon('i-camera')}Ver cámara</button>
