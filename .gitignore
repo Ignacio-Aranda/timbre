@@ -23,3 +23,7 @@ credentials.json
 Thumbs.db
 .vscode/
 .idea/
+
+# local debug/smoke scratch
+nativelog.txt
+*-smoke*.json

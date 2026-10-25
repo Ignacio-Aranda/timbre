@@ -1,8 +1,33 @@
 'use strict';
 
-const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, dialog, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, dialog, nativeImage, shell, nativeTheme, systemPreferences } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+
+// Windows 11 (build >= 22000) gets the Mica backdrop and rounded chrome.
+const isWin11 = process.platform === 'win32' && Number(os.release().split('.')[2] || 0) >= 22000;
+
+// The OS accent colour, so our primary actions match the system. Windows and
+// macOS expose it; elsewhere we fall back to a neutral system blue.
+function systemAccent() {
+  try {
+    const hex = systemPreferences.getAccentColor?.();
+    if (hex && hex.length >= 6) return '#' + hex.slice(0, 6);
+  } catch {
+    /* not available */
+  }
+  return process.platform === 'win32' ? '#0067c0' : '#3584e4';
+}
+
+function themeEnv() {
+  return {
+    platform: process.platform,
+    isWin11,
+    accent: systemAccent(),
+    dark: nativeTheme.shouldUseDarkColors,
+  };
+}
 
 const { createStores } = require('./store');
 const { extractCredentials } = require('./apk/extract');
@@ -225,7 +250,8 @@ function createHomeWindow() {
     homeWindow.focus();
     return homeWindow;
   }
-  homeWindow = new BrowserWindow({
+  const dark = nativeTheme.shouldUseDarkColors;
+  const opts = {
     width: 940,
     height: 660,
     minWidth: 720,
@@ -233,14 +259,21 @@ function createHomeWindow() {
     show: false,
     icon: appIcon(),
     title: 'Timbre',
-    backgroundColor: '#0E1420',
+    backgroundColor: dark ? '#202020' : '#f3f3f3',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
-  });
+  };
+  // Native Windows 11 backdrop (Mica). The renderer keeps its base layer
+  // translucent so the backdrop shows through, Fluent-style.
+  if (isWin11) {
+    opts.backgroundMaterial = 'mica';
+    opts.backgroundColor = '#00000000';
+  }
+  homeWindow = new BrowserWindow(opts);
   homeWindow.loadFile(path.join(RENDERER_DIR, 'home.html'));
   homeWindow.once('ready-to-show', () => {
     if (!stores.settings.get('startMinimized') || !haveCredentials()) homeWindow.show();
@@ -259,15 +292,16 @@ function showCallWindow(callInfo) {
   if (!callWindow) {
     callWindow = new BrowserWindow({
       width: 420,
-      height: 620,
+      height: 640,
       show: false,
-      frame: false,
+      frame: true,
       resizable: true,
       alwaysOnTop: true,
       skipTaskbar: false,
       icon: appIcon(),
-      title: 'Llamada',
-      backgroundColor: '#11131a',
+      title: 'Timbre',
+      autoHideMenuBar: true,
+      backgroundColor: nativeTheme.shouldUseDarkColors ? '#202020' : '#f3f3f3',
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
         contextIsolation: true,
@@ -437,6 +471,22 @@ ipcMain.handle('state:get', () => {
   return true;
 });
 
+ipcMain.handle('env:get', () => themeEnv());
+
+function broadcastTheme() {
+  const env = themeEnv();
+  for (const w of BrowserWindow.getAllWindows()) {
+    if (!w.isDestroyed()) {
+      w.webContents.send('theme', env);
+      try {
+        w.setBackgroundColor(isWin11 ? '#00000000' : env.dark ? '#202020' : '#f3f3f3');
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+}
+
 ipcMain.handle('apk:pick-and-extract', async () => {
   const result = await dialog.showOpenDialog(homeWindow || undefined, {
     title: 'Selecciona el APK de DuoxMe (base.apk y, si lo tienes, los splits)',
@@ -589,13 +639,18 @@ app.whenReady().then(async () => {
 
   if (process.platform === 'win32') app.setAppUserModelId('com.ignacioaranda.timbre');
 
+  // Follow the OS light/dark setting and react when it changes.
+  nativeTheme.themeSource = 'system';
+  nativeTheme.on('updated', () => broadcastTheme());
+
   // Autostart on login (Windows/Linux).
   app.setLoginItemSettings({ openAtLogin: !!stores.settings.get('autostart'), openAsHidden: true });
 
   createTray();
   createHomeWindow();
 
-  if (haveCredentials()) {
+  // In a render smoke test we don't touch the network.
+  if (haveCredentials() && !process.env.TIMBRE_SMOKE) {
     await startServices();
   }
 

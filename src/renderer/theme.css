@@ -1,67 +1,83 @@
-/* Timbre — shared visual system.
-   Direction: "entryway at dusk". Deep architectural ink blues, with a warm
-   brass glow for the one thing that matters — the doorbell lighting up. The
-   brass is spent only on the active state and the primary action; everything
-   else stays quiet. */
-
-@font-face {
-  font-family: "Grotesk";
-  src: url("../../assets/fonts/grotesk-500.woff2") format("woff2");
-  font-weight: 500;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Grotesk";
-  src: url("../../assets/fonts/grotesk-700.woff2") format("woff2");
-  font-weight: 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: "InterUI";
-  src: url("../../assets/fonts/inter-400.woff2") format("woff2");
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: "InterUI";
-  src: url("../../assets/fonts/inter-500.woff2") format("woff2");
-  font-weight: 500;
-  font-display: swap;
-}
-@font-face {
-  font-family: "InterUI";
-  src: url("../../assets/fonts/inter-600.woff2") format("woff2");
-  font-weight: 600;
-  font-display: swap;
-}
+/* Timbre — native visual system.
+   Follows the OS: system UI font, system accent colour, light/dark from the
+   system setting, and platform-tuned controls (Fluent on Windows, Adwaita on
+   Linux). No bespoke brand fonts or colours — it should read as a native app. */
 
 :root {
-  --ink: #0e1420;
-  --ink-2: #121a28;
-  --panel: #18212f;
-  --panel-2: #202c3e;
-  --panel-3: #27344a;
-  --line: #26324533;
-  --line-solid: #273348;
+  /* One UI font; system-ui resolves to Segoe UI Variable on Windows and the
+     desktop's default sans on Linux. */
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, "Cantarell", "Ubuntu",
+    "Noto Sans", sans-serif;
 
-  --text: #eaeef6;
-  --text-dim: #9aa6bc;
-  --text-faint: #68748a;
+  /* Accent is injected from the OS at runtime; this is the fallback. */
+  --accent: #0067c0;
+  --on-accent: #ffffff;
 
-  --brass: #e7b15c;
-  --brass-glow: #f4cd81;
-  --brass-deep: #b98534;
-  --mint: #58c9a6;
-  --coral: #e87362;
+  --r-control: 4px;
+  --r-card: 8px;
+  --r-big: 8px;
 
-  --font-display: "Grotesk", "Segoe UI", system-ui, sans-serif;
-  --font-body: "InterUI", "Segoe UI", system-ui, -apple-system, sans-serif;
+  /* Light (Fluent light) */
+  --bg: #f3f3f3;
+  --layer: #ffffff;
+  --layer-2: #f6f6f6;
+  --layer-3: #ededed;
+  --control: #00000009;
+  --control-hover: #00000012;
+  --control-active: #00000006;
+  --stroke: #00000014;
+  --stroke-strong: #0000001f;
+  --text: #1b1b1b;
+  --text-2: #000000a6;
+  --text-3: #00000070;
+  --danger: #c42b1c;
+  --ok: #0f7b0f;
+  --shadow: 0 2px 8px #0000001f;
+}
 
-  --r-sm: 8px;
-  --r: 12px;
-  --r-lg: 18px;
-  --shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.55);
-  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #202020;
+    --layer: #2b2b2b;
+    --layer-2: #323232;
+    --layer-3: #3a3a3a;
+    --control: #ffffff0f;
+    --control-hover: #ffffff17;
+    --control-active: #ffffff0a;
+    --stroke: #ffffff14;
+    --stroke-strong: #ffffff24;
+    --text: #ffffff;
+    --text-2: #ffffffc5;
+    --text-3: #ffffff80;
+    --danger: #ff99a4;
+    --ok: #6ccb5f;
+    --shadow: 0 2px 10px #00000040;
+  }
+}
+
+/* Linux / Adwaita tuning: flatter, slightly rounder. */
+body.is-linux {
+  --r-control: 7px;
+  --r-card: 12px;
+  --r-big: 14px;
+  --bg: #fafafb;
+  --layer: #ffffff;
+  --layer-2: #f2f3f5;
+  --control: #0000000f;
+  --control-hover: #00000017;
+  --stroke: #0000001a;
+  --stroke-strong: #00000026;
+}
+@media (prefers-color-scheme: dark) {
+  body.is-linux {
+    --bg: #242424;
+    --layer: #303030;
+    --layer-2: #363636;
+    --control: #ffffff14;
+    --control-hover: #ffffff1f;
+    --stroke: #ffffff1a;
+    --stroke-strong: #ffffff2b;
+  }
 }
 
 * {
@@ -72,42 +88,47 @@ html,
 body {
   margin: 0;
   height: 100%;
-  background: var(--ink);
+  background: var(--bg);
   color: var(--text);
-  font-family: var(--font-body);
+  font-family: var(--font);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+}
+
+/* Mica: let the OS backdrop show through the base layer. */
+body.mica,
+body.mica .app,
+body.mica .side {
+  background: transparent;
 }
 
 h1,
 h2,
-h3 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.01em;
+h3,
+h4 {
   margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.005em;
 }
 
 ::selection {
-  background: var(--brass);
-  color: #1a1206;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
-/* Scrollbars */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a384d;
+  background: var(--text-3);
   border-radius: 10px;
-  border: 2px solid transparent;
+  border: 4px solid transparent;
   background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #37485f;
+  background: var(--text-2);
   background-clip: padding-box;
 }
 ::-webkit-scrollbar-track {
@@ -121,182 +142,149 @@ h3 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid transparent;
-  border-radius: var(--r-sm);
-  padding: 10px 16px;
-  font-family: var(--font-body);
-  font-size: 13.5px;
+  border: 1px solid var(--stroke-strong);
+  border-radius: var(--r-control);
+  padding: 7px 14px;
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
-  background: var(--panel-2);
+  background: var(--control);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.16s var(--ease), border-color 0.16s var(--ease),
-    transform 0.08s var(--ease), box-shadow 0.16s var(--ease);
+  transition: background 0.1s linear, border-color 0.1s linear, opacity 0.1s linear;
 }
 .btn:hover {
-  background: var(--panel-3);
+  background: var(--control-hover);
 }
 .btn:active {
-  transform: translateY(1px);
+  background: var(--control-active);
+  color: var(--text-2);
 }
 .btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: default;
-  transform: none;
 }
 .btn:focus-visible {
-  outline: 2px solid var(--brass);
-  outline-offset: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
-.btn--primary {
-  background: linear-gradient(180deg, var(--brass-glow), var(--brass));
-  color: #231705;
-  border-color: #d9a450;
-  box-shadow: 0 6px 18px -8px rgba(231, 177, 92, 0.6);
+.btn--accent {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: transparent;
 }
-.btn--primary:hover {
-  background: linear-gradient(180deg, #f8d58e, var(--brass-glow));
+.btn--accent:hover {
+  background: var(--accent);
+  opacity: 0.9;
 }
-.btn--ghost {
+.btn--accent:active {
+  opacity: 0.8;
+  color: var(--on-accent);
+}
+.btn--subtle {
   background: transparent;
-  border-color: var(--line-solid);
-  color: var(--text-dim);
+  border-color: transparent;
 }
-.btn--ghost:hover {
-  background: var(--panel);
-  color: var(--text);
+.btn--subtle:hover {
+  background: var(--control-hover);
 }
 .btn--danger {
-  background: var(--coral);
-  color: #2a0f0a;
-  border-color: #d9604f;
+  background: #c42b1c;
+  color: #ffffff;
+  border-color: transparent;
 }
 .btn--danger:hover {
-  background: #ef8676;
+  background: #b0271a;
+  color: #ffffff;
+}
+.btn--danger:active {
+  background: #9e2317;
+  color: #ffffffcc;
 }
 .btn--block {
   width: 100%;
 }
 .btn .ico {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
   flex: none;
 }
 
-/* ---- Status pill ------------------------------------------------------ */
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 11px 5px 9px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  background: var(--panel);
-  color: var(--text-dim);
-  border: 1px solid var(--line-solid);
-}
-.pill .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--text-faint);
-  flex: none;
-}
-.pill.is-on {
-  color: var(--mint);
-  border-color: #2b5346;
-  background: #122a24;
-}
-.pill.is-on .dot {
-  background: var(--mint);
-  box-shadow: 0 0 0 0 rgba(88, 201, 166, 0.6);
-  animation: breathe 2.6s var(--ease) infinite;
-}
-.pill.is-mid {
-  color: var(--brass-glow);
-  border-color: #4a3a1e;
-  background: #241c0e;
-}
-.pill.is-mid .dot {
-  background: var(--brass-glow);
-}
-.pill.is-off {
-  color: #e39b92;
-  border-color: #4a2723;
-  background: #241312;
-}
-.pill.is-off .dot {
-  background: var(--coral);
-}
-
-@keyframes breathe {
-  0% {
-    box-shadow: 0 0 0 0 rgba(88, 201, 166, 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 7px rgba(88, 201, 166, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(88, 201, 166, 0);
-  }
-}
-
-/* ---- Toggle switch ---------------------------------------------------- */
+/* ---- Toggle switch (WinUI / Adwaita) ---------------------------------- */
 
 .switch {
   position: relative;
-  width: 42px;
-  height: 24px;
+  width: 40px;
+  height: 20px;
   flex: none;
 }
 .switch input {
   position: absolute;
+  inset: 0;
   opacity: 0;
-  width: 100%;
-  height: 100%;
   margin: 0;
   cursor: pointer;
 }
 .switch .track {
   position: absolute;
   inset: 0;
-  background: var(--panel-3);
   border-radius: 999px;
-  transition: background 0.18s var(--ease);
+  background: var(--control);
+  border: 1px solid var(--text-2);
+  transition: background 0.12s linear, border-color 0.12s linear;
 }
 .switch .thumb {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
+  top: 5px;
+  left: 5px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #cdd5e3;
-  transition: transform 0.18s var(--ease), background 0.18s var(--ease);
+  background: var(--text);
+  transition: transform 0.12s ease, background 0.12s linear, width 0.12s linear, height 0.12s linear, top 0.12s linear, left 0.12s linear;
 }
 .switch input:checked ~ .track {
-  background: linear-gradient(180deg, var(--brass-glow), var(--brass-deep));
+  background: var(--accent);
+  border-color: var(--accent);
 }
 .switch input:checked ~ .thumb {
-  transform: translateX(18px);
-  background: #fff6e6;
+  transform: translateX(20px);
+  top: 4px;
+  left: 4px;
+  width: 12px;
+  height: 12px;
+  background: var(--on-accent);
 }
 .switch input:focus-visible ~ .track {
-  outline: 2px solid var(--brass);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+body.is-linux .switch {
+  width: 46px;
+  height: 24px;
+}
+body.is-linux .switch .thumb {
+  width: 16px;
+  height: 16px;
+  top: 3px;
+  left: 3px;
+}
+body.is-linux .switch input:checked ~ .thumb {
+  transform: translateX(22px);
+  width: 16px;
+  height: 16px;
+  top: 3px;
+  left: 3px;
 }
 
 /* ---- Card ------------------------------------------------------------- */
 
 .card {
-  background: var(--panel);
-  border: 1px solid var(--line-solid);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow);
+  background: var(--layer);
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-card);
 }
 
 .hidden {
@@ -306,7 +294,6 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
 }

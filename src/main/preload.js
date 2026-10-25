@@ -9,6 +9,10 @@ contextBridge.exposeInMainWorld('timbre', {
   onLog: (cb) => ipcRenderer.on('log', (_e, line) => cb(line)),
   requestState: () => ipcRenderer.invoke('state:get'),
 
+  // Platform / theme (native look)
+  getEnv: () => ipcRenderer.invoke('env:get'),
+  onTheme: (cb) => ipcRenderer.on('theme', (_e, env) => cb(env)),
+
   // Setup
   pickAndExtractApk: () => ipcRenderer.invoke('apk:pick-and-extract'),
   saveAccount: (creds) => ipcRenderer.invoke('account:save', creds),

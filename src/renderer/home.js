@@ -12,6 +12,31 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 let state = null;
 
+// ---- Native environment (platform, accent, theme) ------------------------
+
+function applyEnv(env) {
+  if (!env) return;
+  document.body.classList.toggle('is-win', env.platform === 'win32');
+  document.body.classList.toggle('is-linux', env.platform === 'linux');
+  document.body.classList.toggle('mica', !!env.isWin11);
+  if (env.accent) {
+    document.documentElement.style.setProperty('--accent', env.accent);
+    document.documentElement.style.setProperty('--on-accent', onAccent(env.accent));
+  }
+}
+
+// Readable text colour over the accent fill.
+function onAccent(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return '#ffffff';
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6 ? '#1a1a1a' : '#ffffff';
+}
+
 // ---- Navigation ----------------------------------------------------------
 
 function showView(name) {
@@ -76,26 +101,26 @@ function renderDevices() {
       const doorBtns = doors
         .map(
           (door) =>
-            `<button class="btn btn--ghost" data-door="${esc(d.deviceId)}" data-door-name="${esc(door.name || '')}">
+            `<button class="btn btn--subtle" data-door="${esc(d.deviceId)}" data-door-name="${esc(door.name || '')}">
                ${icon('i-key')}Abrir ${esc(doors.length > 1 ? door.title : 'puerta')}
              </button>`
         )
         .join('');
+      const cams = d.cameras > 1 ? `${d.cameras} cámaras` : d.canSwitch ? 'Varias cámaras' : '1 cámara';
       return `
-        <article class="device">
-          <div class="device__face">
-            <div class="device__lens"></div>
-            <span class="device__state ${online ? '' : 'is-off'}"><span class="dot"></span>${online ? 'Disponible' : 'Sin conexión'}</span>
+        <article class="device card">
+          <div class="device__top">
+            <span class="device__icon">${icon('i-camera')}</span>
+            <div class="device__id">
+              <div class="device__name">${esc(name)}</div>
+              <div class="device__status ${online ? '' : 'is-off'}">
+                <span class="dot"></span>${online ? 'Disponible' : 'Sin conexión'} · ${cams}${d.master ? ' · titular' : ''}
+              </div>
+            </div>
           </div>
-          <div class="device__body">
-            <div>
-              <span class="device__name">${esc(name)}</span>
-              <span class="device__tag">${d.cameras > 1 ? d.cameras + ' cámaras' : d.canSwitch ? 'Varias cámaras' : 'Cámara'}${d.master ? ' · titular' : ''}</span>
-            </div>
-            <div class="device__actions">
-              <button class="btn btn--primary" data-camera="${esc(d.deviceId)}">${icon('i-camera')}Ver cámara</button>
-            </div>
-            <div class="device__doors">${doorBtns}</div>
+          <div class="device__actions">
+            <button class="btn btn--accent" data-camera="${esc(d.deviceId)}">${icon('i-camera')}Ver cámara</button>
+            ${doorBtns}
           </div>
         </article>`;
     })
@@ -250,6 +275,8 @@ function esc(s) {
 // ---- Wire up -------------------------------------------------------------
 
 resetLog();
+api.getEnv().then(applyEnv);
+api.onTheme(applyEnv);
 api.onState((s) => {
   state = s;
   render();
@@ -282,6 +309,8 @@ function demoApi() {
     onState: (cb) => setTimeout(() => cb(state), 0),
     onLog: (cb) => logs.forEach((l) => setTimeout(() => cb(l), 0)),
     requestState: () => {},
+    getEnv: async () => ({ platform: 'win32', isWin11: false, accent: '#0067c0', dark: matchMedia('(prefers-color-scheme: dark)').matches }),
+    onTheme: () => {},
     pickAndExtractApk: async () => ({ ok: true, app: { versionName: '4.4.1' }, urlsConfirmed: true }),
     saveAccount: async () => ({ ok: true }),
     setSettings: async () => {},

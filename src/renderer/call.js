@@ -36,6 +36,22 @@ let hangupTimer = null;
 const log = (m) => api.callLog(m);
 const setStatus = (t) => (ui.status.textContent = t);
 
+// Native environment: platform class + OS accent colour.
+function applyEnv(env) {
+  if (!env) return;
+  document.body.classList.toggle('is-win', env.platform === 'win32');
+  document.body.classList.toggle('is-linux', env.platform === 'linux');
+  document.body.classList.toggle('mica', !!env.isWin11);
+  if (env.accent) {
+    const n = parseInt(env.accent.replace('#', ''), 16);
+    const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+    document.documentElement.style.setProperty('--accent', env.accent);
+    document.documentElement.style.setProperty('--on-accent', lum > 0.6 ? '#1a1a1a' : '#ffffff');
+  }
+}
+api.getEnv?.().then(applyEnv);
+api.onTheme?.(applyEnv);
+
 // ---- Ring sound ----------------------------------------------------------
 
 function startRing(settings) {
