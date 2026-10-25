@@ -599,6 +599,22 @@ ipcMain.handle('door:open', async (_e, { deviceId, doorName } = {}) => {
   }
 });
 
+// Auto-on can race a session still winding down on the panel and come back 409
+// (conflict). That normally clears within a second or two once the previous
+// hang_up lands, so retry once after a short pause before giving up.
+async function autoOnWithRetry(deviceId) {
+  try {
+    return await api.autoOn(deviceId, push.fcmToken);
+  } catch (err) {
+    if (err.status === 409) {
+      log('Cámara ocupada (409); reintentando en 2,5 s…');
+      await new Promise((r) => setTimeout(r, 2500));
+      return api.autoOn(deviceId, push.fcmToken);
+    }
+    throw err;
+  }
+}
+
 // Ask a panel to start its camera so we can watch without anyone calling.
 // The video arrives moments later via an Autoon push, which opens the window.
 ipcMain.handle('camera:open', async (_e, { deviceId } = {}) => {
@@ -609,7 +625,7 @@ ipcMain.handle('camera:open', async (_e, { deviceId } = {}) => {
     // The panel's video arrives via an Autoon push; keep the flyout pinned open.
     sessionActive = true;
     log(`Activando cámara: ${device.tag || device.deviceId}…`);
-    const res = await api.autoOn(device.deviceId, push.fcmToken);
+    const res = await autoOnWithRetry(device.deviceId);
     if (!res) {
       sessionActive = false;
       return { error: 'El portero no respondió a tiempo' };
@@ -617,6 +633,10 @@ ipcMain.handle('camera:open', async (_e, { deviceId } = {}) => {
     return { ok: true };
   } catch (err) {
     sessionActive = false;
+    if (err.status === 409) {
+      log('La cámara sigue ocupada por otra sesión (409).');
+      return { error: 'El portero ya tiene una sesión de vídeo abierta. Espera unos segundos y prueba otra vez.' };
+    }
     return { error: err.message };
   }
 });

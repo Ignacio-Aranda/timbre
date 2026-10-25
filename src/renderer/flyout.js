@@ -216,7 +216,7 @@ api.onIncomingCall(async (info) => {
 api.onSwitchRoom(async (info) => {
   const wasAnswered = current?.answered;
   freezeFrame(); // keep the last picture while we reconnect
-  teardownMedia();
+  teardownMedia({ hangup: false }); // switching rooms, not ending the session
   current = { info, answered: false };
   setCamStatus('Cambiando de cámara…');
   try {
@@ -263,7 +263,7 @@ async function startCall(info) {
       log('Vídeo no disponible: ' + err.message);
       // Transient room expiry: quietly ask the panel to wake again.
       if (!isRing && isTransientJoin(err) && retries < MAX_CAM_RETRIES) {
-        teardownMedia();
+        teardownMedia({ hangup: false }); // retrying the join, not ending it
         return retryCamera(info.deviceId);
       }
       setCamStatus(isRing ? 'No se pudo conectar la llamada' : 'No se pudo abrir la cámara. Prueba otra vez.');
@@ -299,6 +299,10 @@ async function startMedia(info, { receiveOnly }) {
     onLog: (m) => log(m),
   });
   current.signaling = signaling;
+  // An on-demand camera is a session we own and must release on close; a ring we
+  // haven't answered belongs to the visitor, so we leave it be. (Answering a
+  // ring sets this true too, in answerInternal.)
+  signaling.sendHangup = info.mode === 'camera';
   const room = await signaling.connect();
 
   const device = new Device();
@@ -406,7 +410,7 @@ async function doAnswer() {
 
 // ---- Teardown ------------------------------------------------------------
 
-function teardownMedia() {
+function teardownMedia({ hangup = true } = {}) {
   try {
     current?.micStream?.getTracks().forEach((t) => t.stop());
     current?.audioProducer?.close();
@@ -415,7 +419,13 @@ function teardownMedia() {
     current?.recvVideo?.close();
     current?.recvAudio?.close();
     current?.send?.close();
-    current?.signaling?.disconnect();
+    if (current?.signaling) {
+      // When we're only switching cameras (or retrying a failed join) we keep
+      // the overall session alive, so suppress the hang_up that would tell the
+      // panel to tear it down.
+      if (!hangup) current.signaling.sendHangup = false;
+      current.signaling.disconnect();
+    }
   } catch {
     /* ignore */
   }

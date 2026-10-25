@@ -93,27 +93,32 @@ export class Signaling {
     return res.result;
   }
 
-  hangup() {
-    if (this.socket && this.socket.connected) {
-      try {
-        this.socket.emit('hang_up', {});
-      } catch {
-        /* ignore */
-      }
-    }
-  }
-
   disconnect() {
-    if (this.socket) {
-      // A session that never answered leaves silently: hang_up on a ringing
-      // call could end it for the visitor and the monitor.
-      if (this.socket.connected && this.sendHangup) this.hangup();
+    if (!this.socket) return;
+    const sock = this.socket;
+    this.socket = null;
+    const close = () => {
       try {
-        this.socket.disconnect();
+        sock.disconnect();
       } catch {
         /* ignore */
       }
-      this.socket = null;
+    };
+    // A ring we never answered leaves silently: a hang_up could end the call for
+    // the visitor and the monitor. An on-demand camera we opened is ours, so we
+    // DO hang up — otherwise the panel keeps the video channel reserved and the
+    // next auto-on is rejected with HTTP 409.
+    if (sock.connected && this.sendHangup) {
+      try {
+        sock.emit('hang_up', {});
+      } catch {
+        /* ignore */
+      }
+      // Let the packet flush before the transport closes, or the panel never
+      // sees the hang_up and the session lingers.
+      setTimeout(close, 300);
+    } else {
+      close();
     }
   }
 }
