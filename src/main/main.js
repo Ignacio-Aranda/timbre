@@ -306,8 +306,22 @@ function createFlyout() {
 }
 
 function positionFlyout() {
-  const wa = screen.getPrimaryDisplay().workArea;
-  const x = wa.x + wa.width - FLYOUT_W - 12;
+  // Anchor near the tray icon when we know where it is (wherever Windows put
+  // it, including the overflow), else fall back to the bottom-right corner —
+  // where the volume flyout lives.
+  let bounds = null;
+  try {
+    bounds = tray?.getBounds?.();
+  } catch {
+    /* some platforms don't report tray bounds */
+  }
+  const display = bounds && bounds.width ? screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y }) : screen.getPrimaryDisplay();
+  const wa = display.workArea;
+  let x = wa.x + wa.width - FLYOUT_W - 12;
+  if (bounds && bounds.width) {
+    x = Math.round(bounds.x + bounds.width / 2 - FLYOUT_W / 2);
+  }
+  x = Math.max(wa.x + 8, Math.min(x, wa.x + wa.width - FLYOUT_W - 8));
   const y = wa.y + wa.height - FLYOUT_H - 12;
   flyoutWindow.setBounds({ x, y, width: FLYOUT_W, height: FLYOUT_H });
 }

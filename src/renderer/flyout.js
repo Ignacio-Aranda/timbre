@@ -139,17 +139,53 @@ el('fly-open').addEventListener('click', async () => {
 el('fly-answer').addEventListener('click', doAnswer);
 el('fly-switch').addEventListener('click', async () => {
   el('fly-switch').disabled = true;
+  freezeFrame();
   setCamStatus('Cambiando de cámara…');
   const res = await api.switchCamera(current?.info.deviceId);
   if (res?.error) setCamStatus('No se pudo cambiar: ' + res.error);
   setTimeout(() => (el('fly-switch').disabled = false), 1500);
 });
 
+// Freeze the current video frame into the still image, so a reconnect (camera
+// switch) shows the last picture with a "changing…" label instead of going black.
+function freezeFrame() {
+  const v = el('fly-video');
+  if (!v.videoWidth) return false;
+  try {
+    const c = document.createElement('canvas');
+    c.width = v.videoWidth;
+    c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0);
+    el('fly-photo').src = c.toDataURL('image/jpeg', 0.82);
+    show(el('fly-photo'), true);
+    show(el('fly-video'), false);
+    show(el('fly-ph'), false);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ---- Open camera on demand ----------------------------------------------
 
 async function openCameraFor(deviceId, name) {
-  current = { info: { deviceId, deviceName: name, mode: 'camera' }, answered: false, pending: true };
+  current = { info: { deviceId, deviceName: name, mode: 'camera' }, answered: false, pending: true, retries: 0 };
   prepareCameraView('camera', name || 'Cámara');
+  setCamStatus('Activando cámara…');
+  const res = await api.openCamera(deviceId);
+  if (res?.error) setCamStatus(res.error);
+}
+
+// A join can fail because the panel's room expired between the push and our
+// join. That's transient: ask for the camera again rather than showing an error.
+const MAX_CAM_RETRIES = 2;
+function isTransientJoin(err) {
+  const m = (err && err.message) || '';
+  return /room|finished|exist|timeout|join_call/i.test(m);
+}
+async function retryCamera(deviceId) {
+  const n = (current?.retries || 0) + 1;
+  current = { info: { deviceId, mode: 'camera' }, answered: false, pending: true, retries: n };
   setCamStatus('Activando cámara…');
   const res = await api.openCamera(deviceId);
   if (res?.error) setCamStatus(res.error);
@@ -175,6 +211,7 @@ api.onIncomingCall(async (info) => {
 });
 api.onSwitchRoom(async (info) => {
   const wasAnswered = current?.answered;
+  freezeFrame(); // keep the last picture while we reconnect
   teardownMedia();
   current = { info, answered: false };
   setCamStatus('Cambiando de cámara…');
@@ -182,14 +219,16 @@ api.onSwitchRoom(async (info) => {
     await startMedia(info, { receiveOnly: !wasAnswered });
     setCamStatus('Cámara en directo');
   } catch (err) {
-    setCamStatus('Error: ' + err.message);
+    log('Cambio de cámara falló: ' + err.message);
+    setCamStatus('No se pudo cambiar de cámara');
   }
 });
 api.onCallEnded(() => endSession('remote'));
 
 async function startCall(info) {
   // Keep any pending openCamera session info, but prefer the push's room data.
-  current = { info, answered: false, muted: false };
+  const retries = current?.retries || 0;
+  current = { info, answered: false, muted: false, retries };
   const isRing = info.mode !== 'camera';
   prepareCameraView(isRing ? 'ring' : 'camera', info.title || info.deviceName || 'Portero');
   show(el('fly-switch'), !isRing && !!info.canSwitchCamera);
@@ -218,7 +257,12 @@ async function startCall(info) {
       setCamStatus(isRing ? 'En directo — Contestar para hablar' : 'Cámara en directo');
     } catch (err) {
       log('Vídeo no disponible: ' + err.message);
-      setCamStatus('Sin vídeo: ' + err.message);
+      // Transient room expiry: quietly ask the panel to wake again.
+      if (!isRing && isTransientJoin(err) && retries < MAX_CAM_RETRIES) {
+        teardownMedia();
+        return retryCamera(info.deviceId);
+      }
+      setCamStatus(isRing ? 'No se pudo conectar la llamada' : 'No se pudo abrir la cámara. Prueba otra vez.');
     }
   }
 }
