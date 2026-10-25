@@ -45,12 +45,12 @@ página de [Releases](../../releases).
 
 ### Windows
 
-1. Descarga `Timbre-Setup-X.Y.Z.exe`.
+1. Descarga el instalador `Timbre.Setup.X.Y.Z.exe`.
 2. Ábrelo y sigue el asistente. La aplicación no está firmada, así que la primera
    vez Windows SmartScreen mostrará un aviso: pulsa **Más información** y luego
    **Ejecutar de todas formas**.
 
-Si prefieres no instalar, usa la versión portable `Timbre-X.Y.Z.exe`, que se
+Si prefieres no instalar, usa la versión portable `Timbre.X.Y.Z.exe`, que se
 ejecuta directamente.
 
 ### Linux
