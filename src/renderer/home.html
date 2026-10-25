@@ -2,98 +2,207 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; font-src 'self'; style-src 'self' 'unsafe-inline';"
+    />
     <title>Timbre</title>
+    <link rel="stylesheet" href="theme.css" />
     <link rel="stylesheet" href="home.css" />
   </head>
   <body>
-    <header class="top">
-      <div class="brand">
-        <span class="logo">🔔</span>
-        <div>
-          <h1>Timbre</h1>
-          <p class="tagline">Portero Fermax DuoxMe en tu ordenador</p>
-        </div>
-      </div>
-      <span id="badge" class="badge badge-off">Sin configurar</span>
-    </header>
+    <!-- Icon sprite -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+        </symbol>
+        <symbol id="i-devices" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="2.5" />
+          <circle cx="12" cy="9" r="2.4" />
+          <path d="M8 16h8" />
+        </symbol>
+        <symbol id="i-log" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 6h12M8 12h12M8 18h12" />
+          <circle cx="3.5" cy="6" r="1.1" fill="currentColor" stroke="none" />
+          <circle cx="3.5" cy="12" r="1.1" fill="currentColor" stroke="none" />
+          <circle cx="3.5" cy="18" r="1.1" fill="currentColor" stroke="none" />
+        </symbol>
+        <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </symbol>
+        <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 7l-7 5 7 5V7z" />
+          <rect x="1" y="5" width="15" height="14" rx="2.5" />
+        </symbol>
+        <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="7.5" cy="15.5" r="4.5" />
+          <path d="M10.7 12.3 20 3M16 7l3 3M14 9l2 2" />
+        </symbol>
+        <symbol id="i-switch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8h13l-3-3M21 16H8l3 3" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5" />
+        </symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+        </symbol>
+        <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        </symbol>
+      </defs>
+    </svg>
 
-    <main>
-      <!-- Setup -->
-      <section id="setup" class="card">
-        <h2>Puesta en marcha</h2>
-
-        <div class="step">
-          <div class="step-num" id="step1-num">1</div>
-          <div class="step-body">
-            <h3>Credenciales desde tu APK</h3>
-            <p class="muted">
-              Timbre lee la configuración de tu propia copia de la app DuoxMe.
-              Selecciona el <code>base.apk</code> (y los splits si los tienes).
-            </p>
-            <button id="btn-apk" class="btn">Seleccionar APK…</button>
-            <p id="apk-result" class="result"></p>
+    <div class="app">
+      <aside class="side">
+        <div class="brand">
+          <span class="brand__mark"><svg class="ico"><use href="#i-bell" /></svg></span>
+          <div class="brand__text">
+            <strong>Timbre</strong>
+            <span>portero en el PC</span>
           </div>
         </div>
 
-        <div class="step">
-          <div class="step-num" id="step2-num">2</div>
-          <div class="step-body">
-            <h3>Tu cuenta de Fermax</h3>
-            <p class="muted">
-              Usa una cuenta dedicada para el PC (invita a un usuario desde la app).
-              Fermax limita las sesiones por cuenta.
-            </p>
-            <label>Correo
-              <input id="acc-user" type="email" autocomplete="username" placeholder="tucorreo+pc@gmail.com" />
-            </label>
-            <label>Contraseña
-              <input id="acc-pass" type="password" autocomplete="current-password" />
-            </label>
-            <button id="btn-login" class="btn" disabled>Iniciar sesión</button>
-            <p id="login-result" class="result"></p>
-          </div>
+        <nav class="nav">
+          <button class="nav__item is-active" data-view="devices">
+            <svg class="ico"><use href="#i-devices" /></svg><span>Dispositivos</span>
+          </button>
+          <button class="nav__item" data-view="log">
+            <svg class="ico"><use href="#i-log" /></svg><span>Registro</span>
+          </button>
+          <button class="nav__item" data-view="settings">
+            <svg class="ico"><use href="#i-settings" /></svg><span>Ajustes</span>
+          </button>
+        </nav>
+
+        <div class="side__foot">
+          <span id="status-pill" class="pill is-off"><span class="dot"></span><span id="status-text">Sin configurar</span></span>
         </div>
-      </section>
+      </aside>
 
-      <!-- Status -->
-      <section id="status-card" class="card hidden">
-        <h2>Estado</h2>
-        <dl class="kv">
-          <dt>Cuenta</dt><dd id="st-account">—</dd>
-          <dt>Avisos</dt><dd id="st-fcm">—</dd>
-          <dt>App leída</dt><dd id="st-app">—</dd>
-          <dt>Dispositivo</dt><dd><select id="st-device"></select></dd>
-        </dl>
-        <button id="btn-test" class="btn btn-ghost">Probar llamada</button>
-      </section>
+      <main class="content">
+        <!-- ===== Dispositivos ===== -->
+        <section class="view is-active" data-view="devices">
+          <header class="view__head">
+            <div>
+              <h2>Dispositivos</h2>
+              <p class="view__sub">Mira la cámara o abre la puerta cuando quieras.</p>
+            </div>
+          </header>
 
-      <!-- Settings -->
-      <section id="settings-card" class="card hidden">
-        <h2>Preferencias</h2>
-        <label class="row">
-          <span>Sonar aunque el sistema esté en silencio</span>
-          <input id="set-force" type="checkbox" />
-        </label>
-        <label class="row">
-          <span>Mostrar vídeo al llamar</span>
-          <input id="set-video" type="checkbox" />
-        </label>
-        <label class="row">
-          <span>Arrancar al iniciar sesión</span>
-          <input id="set-autostart" type="checkbox" />
-        </label>
-        <label class="col">
-          <span>Volumen del tono</span>
-          <input id="set-volume" type="range" min="0" max="1" step="0.05" />
-        </label>
-      </section>
+          <div id="devices-empty" class="empty hidden">
+            <span class="empty__mark"><svg class="ico"><use href="#i-bell" /></svg></span>
+            <h3>Aún no hay nada conectado</h3>
+            <p>Ve a <strong>Ajustes</strong> para leer tu APK e iniciar sesión. Tardas un minuto.</p>
+            <button class="btn btn--primary" data-goto="settings">Ir a Ajustes</button>
+          </div>
 
-      <section class="card log-card">
-        <h2>Actividad</h2>
-        <pre id="log" class="log"></pre>
-      </section>
-    </main>
+          <div id="devices-grid" class="devices"></div>
+        </section>
+
+        <!-- ===== Registro ===== -->
+        <section class="view" data-view="log">
+          <header class="view__head">
+            <div>
+              <h2>Registro</h2>
+              <p class="view__sub">Lo que va pasando: llamadas, aperturas y conexión.</p>
+            </div>
+            <button id="log-clear" class="btn btn--ghost">
+              <svg class="ico"><use href="#i-trash" /></svg>Limpiar
+            </button>
+          </header>
+          <div id="log" class="log"></div>
+        </section>
+
+        <!-- ===== Ajustes ===== -->
+        <section class="view" data-view="settings">
+          <header class="view__head">
+            <div>
+              <h2>Ajustes</h2>
+              <p class="view__sub">Puesta en marcha y preferencias.</p>
+            </div>
+          </header>
+
+          <!-- Setup (shown until configured) -->
+          <div id="setup" class="card setup">
+            <div class="card__head">
+              <h3>Puesta en marcha</h3>
+            </div>
+            <ol class="steps">
+              <li class="step" id="step-apk">
+                <span class="step__num">1</span>
+                <div class="step__body">
+                  <h4>Lee tu copia de la app</h4>
+                  <p>Timbre toma la configuración de tu propio APK de DuoxMe. No sale de tu equipo.</p>
+                  <button id="btn-apk" class="btn">
+                    <svg class="ico"><use href="#i-folder" /></svg>Seleccionar APK…
+                  </button>
+                  <p id="apk-result" class="note"></p>
+                </div>
+              </li>
+              <li class="step" id="step-login">
+                <span class="step__num">2</span>
+                <div class="step__body">
+                  <h4>Inicia sesión</h4>
+                  <p>Usa un usuario dedicado para el PC: Fermax limita las sesiones por cuenta.</p>
+                  <div class="field">
+                    <label for="acc-user">Correo</label>
+                    <input id="acc-user" type="email" autocomplete="username" placeholder="tucorreo+pc@gmail.com" />
+                  </div>
+                  <div class="field">
+                    <label for="acc-pass">Contraseña</label>
+                    <input id="acc-pass" type="password" autocomplete="current-password" />
+                  </div>
+                  <button id="btn-login" class="btn btn--primary" disabled>Iniciar sesión</button>
+                  <p id="login-result" class="note"></p>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <!-- Connected summary (shown once configured) -->
+          <div id="connected" class="card connected hidden">
+            <div class="connected__row">
+              <span class="connected__badge"><svg class="ico"><use href="#i-check" /></svg></span>
+              <div>
+                <h3 id="conn-account">Conectado</h3>
+                <p id="conn-meta" class="note"></p>
+              </div>
+            </div>
+            <button id="btn-reconfig" class="btn btn--ghost">Reconfigurar</button>
+          </div>
+
+          <!-- Preferences -->
+          <div id="prefs" class="card prefs hidden">
+            <div class="card__head"><h3>Preferencias</h3></div>
+            <label class="pref">
+              <div><span class="pref__name">Sonar aunque el sistema esté en silencio</span>
+                <span class="pref__hint">El tono suena por tu salida de audio (los cascos).</span></div>
+              <span class="switch"><input id="set-force" type="checkbox" /><span class="track"></span><span class="thumb"></span></span>
+            </label>
+            <label class="pref">
+              <div><span class="pref__name">Mostrar vídeo al llamar</span>
+                <span class="pref__hint">Abre la cámara en cuanto suena el timbre.</span></div>
+              <span class="switch"><input id="set-video" type="checkbox" /><span class="track"></span><span class="thumb"></span></span>
+            </label>
+            <label class="pref">
+              <div><span class="pref__name">Arrancar al iniciar sesión</span>
+                <span class="pref__hint">Timbre se queda esperando en la bandeja.</span></div>
+              <span class="switch"><input id="set-autostart" type="checkbox" /><span class="track"></span><span class="thumb"></span></span>
+            </label>
+            <div class="pref pref--col">
+              <div><span class="pref__name">Volumen del tono</span></div>
+              <input id="set-volume" class="range" type="range" min="0" max="1" step="0.05" />
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
 
     <script src="home.bundle.js"></script>
   </body>

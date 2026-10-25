@@ -14,15 +14,21 @@ contextBridge.exposeInMainWorld('timbre', {
   saveAccount: (creds) => ipcRenderer.invoke('account:save', creds),
   setSettings: (patch) => ipcRenderer.invoke('settings:set', patch),
 
+  // Devices (home -> main)
+  openCamera: (deviceId) => ipcRenderer.invoke('camera:open', { deviceId }),
+  openDoorDevice: (deviceId, doorName) => ipcRenderer.invoke('door:open', { deviceId, doorName }),
+
   // Testing
   simulateCall: () => ipcRenderer.invoke('debug:simulate-call'),
 
   // Call window (main -> renderer)
   onIncomingCall: (cb) => ipcRenderer.on('incoming-call', (_e, info) => cb(info)),
   onCallEnded: (cb) => ipcRenderer.on('call:ended', (_e, info) => cb(info)),
+  onSwitchRoom: (cb) => ipcRenderer.on('switch-room', (_e, info) => cb(info)),
 
   // Call window (renderer -> main)
   openDoor: (info) => ipcRenderer.invoke('call:open-door', info),
+  switchCamera: (deviceId) => ipcRenderer.invoke('camera:switch', { deviceId }),
   dismissCall: () => ipcRenderer.invoke('call:dismiss'),
   hideCall: () => ipcRenderer.send('call:hide'),
   callLog: (line) => ipcRenderer.invoke('call:log', line),

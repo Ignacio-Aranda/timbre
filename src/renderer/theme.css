@@ -1,0 +1,312 @@
+/* Timbre — shared visual system.
+   Direction: "entryway at dusk". Deep architectural ink blues, with a warm
+   brass glow for the one thing that matters — the doorbell lighting up. The
+   brass is spent only on the active state and the primary action; everything
+   else stays quiet. */
+
+@font-face {
+  font-family: "Grotesk";
+  src: url("../../assets/fonts/grotesk-500.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Grotesk";
+  src: url("../../assets/fonts/grotesk-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "InterUI";
+  src: url("../../assets/fonts/inter-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "InterUI";
+  src: url("../../assets/fonts/inter-500.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "InterUI";
+  src: url("../../assets/fonts/inter-600.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+
+:root {
+  --ink: #0e1420;
+  --ink-2: #121a28;
+  --panel: #18212f;
+  --panel-2: #202c3e;
+  --panel-3: #27344a;
+  --line: #26324533;
+  --line-solid: #273348;
+
+  --text: #eaeef6;
+  --text-dim: #9aa6bc;
+  --text-faint: #68748a;
+
+  --brass: #e7b15c;
+  --brass-glow: #f4cd81;
+  --brass-deep: #b98534;
+  --mint: #58c9a6;
+  --coral: #e87362;
+
+  --font-display: "Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "InterUI", "Segoe UI", system-ui, -apple-system, sans-serif;
+
+  --r-sm: 8px;
+  --r: 12px;
+  --r-lg: 18px;
+  --shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.55);
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+::selection {
+  background: var(--brass);
+  color: #1a1206;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a384d;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #37485f;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---- Buttons ---------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 10px 16px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--panel-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.16s var(--ease), border-color 0.16s var(--ease),
+    transform 0.08s var(--ease), box-shadow 0.16s var(--ease);
+}
+.btn:hover {
+  background: var(--panel-3);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+.btn--primary {
+  background: linear-gradient(180deg, var(--brass-glow), var(--brass));
+  color: #231705;
+  border-color: #d9a450;
+  box-shadow: 0 6px 18px -8px rgba(231, 177, 92, 0.6);
+}
+.btn--primary:hover {
+  background: linear-gradient(180deg, #f8d58e, var(--brass-glow));
+}
+.btn--ghost {
+  background: transparent;
+  border-color: var(--line-solid);
+  color: var(--text-dim);
+}
+.btn--ghost:hover {
+  background: var(--panel);
+  color: var(--text);
+}
+.btn--danger {
+  background: var(--coral);
+  color: #2a0f0a;
+  border-color: #d9604f;
+}
+.btn--danger:hover {
+  background: #ef8676;
+}
+.btn--block {
+  width: 100%;
+}
+.btn .ico {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+
+/* ---- Status pill ------------------------------------------------------ */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px 5px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--panel);
+  color: var(--text-dim);
+  border: 1px solid var(--line-solid);
+}
+.pill .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex: none;
+}
+.pill.is-on {
+  color: var(--mint);
+  border-color: #2b5346;
+  background: #122a24;
+}
+.pill.is-on .dot {
+  background: var(--mint);
+  box-shadow: 0 0 0 0 rgba(88, 201, 166, 0.6);
+  animation: breathe 2.6s var(--ease) infinite;
+}
+.pill.is-mid {
+  color: var(--brass-glow);
+  border-color: #4a3a1e;
+  background: #241c0e;
+}
+.pill.is-mid .dot {
+  background: var(--brass-glow);
+}
+.pill.is-off {
+  color: #e39b92;
+  border-color: #4a2723;
+  background: #241312;
+}
+.pill.is-off .dot {
+  background: var(--coral);
+}
+
+@keyframes breathe {
+  0% {
+    box-shadow: 0 0 0 0 rgba(88, 201, 166, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(88, 201, 166, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(88, 201, 166, 0);
+  }
+}
+
+/* ---- Toggle switch ---------------------------------------------------- */
+
+.switch {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  flex: none;
+}
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.switch .track {
+  position: absolute;
+  inset: 0;
+  background: var(--panel-3);
+  border-radius: 999px;
+  transition: background 0.18s var(--ease);
+}
+.switch .thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #cdd5e3;
+  transition: transform 0.18s var(--ease), background 0.18s var(--ease);
+}
+.switch input:checked ~ .track {
+  background: linear-gradient(180deg, var(--brass-glow), var(--brass-deep));
+}
+.switch input:checked ~ .thumb {
+  transform: translateX(18px);
+  background: #fff6e6;
+}
+.switch input:focus-visible ~ .track {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+/* ---- Card ------------------------------------------------------------- */
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line-solid);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+
+.hidden {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

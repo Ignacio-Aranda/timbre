@@ -118,7 +118,17 @@ async function onPushNotification(n) {
   }
 
   if (n.type === 'Call') {
-    await handleIncomingCall(n);
+    await handleIncomingCall(n, { mode: 'ring' });
+  } else if (n.type === 'Autoon') {
+    // On-demand camera (we asked the panel to wake): show video, no ringing.
+    await handleIncomingCall(n, { mode: 'camera' });
+  } else if (n.type === 'ChangeVideoSource') {
+    // The panel moved us to another camera: follow the new room if a window is up.
+    if (callWindow && !callWindow.isDestroyed() && callWindow.isVisible()) {
+      await repointCall(n);
+    } else {
+      await handleIncomingCall(n, { mode: 'camera' });
+    }
   } else if (n.type === 'CallEnd') {
     endCall('remote');
   } else if (n.type === 'Logout') {
@@ -129,7 +139,7 @@ async function onPushNotification(n) {
   }
 }
 
-async function handleIncomingCall(n) {
+async function buildCallInfo(n, mode) {
   const deviceName = deviceLabel(n.deviceId);
 
   // Fetch the visitor photo if the push referenced one (best effort).
@@ -143,7 +153,8 @@ async function handleIncomingCall(n) {
     }
   }
 
-  const callInfo = {
+  return {
+    mode, // 'ring' (someone called) | 'camera' (we opened it on demand)
     deviceId: n.deviceId,
     callAs: n.callAs,
     roomId: n.roomId,
@@ -152,17 +163,28 @@ async function handleIncomingCall(n) {
     conversationTimeout: n.conversationTimeout || 90,
     previewTimeout: n.previewTimeout || 30,
     deviceName,
-    title: n.title || 'Llamada del portero',
-    body: n.body || deviceName,
+    canSwitchCamera: countCameras(n.deviceId) > 1,
+    title: mode === 'camera' ? deviceName : n.title || 'Llamada del portero',
+    body: mode === 'camera' ? 'Cámara en directo' : n.body || deviceName,
     photoDataUrl,
     oauthToken: await api.getAccessToken().catch(() => ''),
     fcmToken: push?.fcmToken || '',
   };
+}
 
+async function handleIncomingCall(n, { mode }) {
+  const callInfo = await buildCallInfo(n, mode);
   showCallWindow(callInfo);
+  if (mode === 'ring') {
+    // System toast too, so it reaches the user even if the window is covered.
+    notifyInfo(callInfo.title, callInfo.body, { urgent: true });
+  }
+}
 
-  // System toast too, so it reaches the user even if the window is covered.
-  notifyInfo(callInfo.title, callInfo.body, { urgent: true });
+// The panel switched cameras: hand the call window the new room to re-join.
+async function repointCall(n) {
+  const callInfo = await buildCallInfo(n, 'camera');
+  callWindow.webContents.send('switch-room', callInfo);
 }
 
 // ---------------------------------------------------------------------------
@@ -181,13 +203,14 @@ function createHomeWindow() {
     return homeWindow;
   }
   homeWindow = new BrowserWindow({
-    width: 480,
-    height: 640,
-    minWidth: 400,
-    minHeight: 520,
+    width: 940,
+    height: 660,
+    minWidth: 720,
+    minHeight: 560,
     show: false,
     icon: appIcon(),
     title: 'Timbre',
+    backgroundColor: '#0E1420',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -302,9 +325,34 @@ function deviceLabel(deviceId) {
   return p ? p.tag || p.deviceId : deviceId || 'Portero';
 }
 
+function deviceById(deviceId) {
+  return pairings.find((p) => p.deviceId === deviceId) || null;
+}
+
 function activeDevice() {
   const id = stores.settings.get('activeDeviceId');
   return pairings.find((p) => p.deviceId === id) || pairings[0] || null;
+}
+
+// A device with panel access doors reaches more than one camera/panel.
+function countCameras(deviceId) {
+  const p = deviceById(deviceId);
+  if (!p) return 1;
+  const panels = new Set(
+    Object.values(p.accessDoors)
+      .map((d) => d.panelId)
+      .filter(Boolean)
+  );
+  return Math.max(1, panels.size || 1);
+}
+
+// The doors a user can open on a device, for the UI.
+function doorsOf(deviceId) {
+  const p = deviceById(deviceId);
+  if (!p) return [];
+  return Object.values(p.accessDoors)
+    .filter((d) => d.visible)
+    .map((d) => ({ name: d.name, title: d.title }));
 }
 
 function notifyInfo(title, body, { urgent = false } = {}) {
@@ -329,7 +377,13 @@ function broadcastState() {
     firebase: stores.credentials.get('firebase')
       ? { projectId: stores.credentials.get('firebase').projectId, packageName: stores.credentials.get('firebase').packageName }
       : null,
-    devices: pairings.map((p) => ({ deviceId: p.deviceId, tag: p.tag, master: p.master })),
+    devices: pairings.map((p) => ({
+      deviceId: p.deviceId,
+      tag: p.tag,
+      master: p.master,
+      doors: doorsOf(p.deviceId),
+      cameras: countCameras(p.deviceId),
+    })),
     activeDeviceId: stores.settings.get('activeDeviceId'),
     fcmActive: !!push?.fcmToken,
     settings: stores.settings.all(),
@@ -399,7 +453,6 @@ ipcMain.handle('settings:set', (_e, patch) => {
 
 ipcMain.handle('call:open-door', async (_e, info) => {
   try {
-    const device = activeDevice();
     if (info && info.roomId && info.deviceId) {
       await api.openDoorInCall({
         deviceId: info.deviceId,
@@ -409,10 +462,56 @@ ipcMain.handle('call:open-door', async (_e, info) => {
       });
       return { ok: true };
     }
-    if (!device) return { error: 'No hay dispositivo activo' };
-    const door = Object.values(device.accessDoors).find((d) => d.visible) || Object.values(device.accessDoors)[0];
-    if (!door) return { error: 'No se encontró ninguna puerta' };
-    await api.openDoor(device.deviceId, door.accessId, door.panelId);
+    return await openDoorDirect(info?.deviceId, info?.doorName);
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+// Open a door without a call in progress (from the device list).
+async function openDoorDirect(deviceId, doorName) {
+  const device = deviceId ? deviceById(deviceId) : activeDevice();
+  if (!device) return { error: 'No hay ningún portero disponible' };
+  const doors = Object.values(device.accessDoors);
+  const door =
+    (doorName && doors.find((d) => d.name === doorName)) ||
+    doors.find((d) => d.visible) ||
+    doors[0];
+  if (!door) return { error: 'Este portero no tiene ninguna puerta' };
+  await api.openDoor(device.deviceId, door.accessId, door.panelId);
+  log(`Puerta abierta: ${door.title} (${device.tag || device.deviceId})`);
+  return { ok: true };
+}
+
+ipcMain.handle('door:open', async (_e, { deviceId, doorName } = {}) => {
+  try {
+    return await openDoorDirect(deviceId, doorName);
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+// Ask a panel to start its camera so we can watch without anyone calling.
+// The video arrives moments later via an Autoon push, which opens the window.
+ipcMain.handle('camera:open', async (_e, { deviceId } = {}) => {
+  try {
+    const device = deviceId ? deviceById(deviceId) : activeDevice();
+    if (!device) return { error: 'No hay ningún portero disponible' };
+    if (!push?.fcmToken) return { error: 'Aún no hay conexión de avisos; espera unos segundos' };
+    log(`Activando cámara: ${device.tag || device.deviceId}…`);
+    const res = await api.autoOn(device.deviceId, push.fcmToken);
+    if (!res) return { error: 'El portero no respondió a tiempo' };
+    return { ok: true };
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle('camera:switch', async (_e, { deviceId } = {}) => {
+  try {
+    const device = deviceId ? deviceById(deviceId) : activeDevice();
+    if (!device || !push?.fcmToken) return { error: 'No disponible' };
+    await api.changeVideoSource(device.deviceId, push.fcmToken);
     return { ok: true };
   } catch (err) {
     return { error: err.message };
@@ -436,16 +535,19 @@ ipcMain.on('call:hide', () => {
 // Dev/testing: simulate an incoming call without the cloud.
 ipcMain.handle('debug:simulate-call', async () => {
   const device = activeDevice();
-  await handleIncomingCall({
-    type: 'Call',
-    deviceId: device?.deviceId || 'TEST-DEVICE',
-    callAs: device?.deviceId || 'TEST-DEVICE',
-    roomId: null,
-    signalingUrl: stores.credentials.get('fermax')?.signalingUrl || '',
-    title: 'Llamada de prueba',
-    body: 'Simulación local (sin vídeo)',
-    conversationTimeout: 90,
-  });
+  await handleIncomingCall(
+    {
+      type: 'Call',
+      deviceId: device?.deviceId || 'TEST-DEVICE',
+      callAs: device?.deviceId || 'TEST-DEVICE',
+      roomId: null,
+      signalingUrl: stores.credentials.get('fermax')?.signalingUrl || '',
+      title: 'Llamada de prueba',
+      body: 'Simulación local (sin vídeo)',
+      conversationTimeout: 90,
+    },
+    { mode: 'ring' }
+  );
   return { ok: true };
 });
 
@@ -486,7 +588,7 @@ app.whenReady().then(async () => {
     };
     const checkRender = () => {
       homeWindow.webContents
-        .executeJavaScript('!!document.getElementById("badge")')
+        .executeJavaScript('!!document.querySelector(".brand") && !!document.querySelector(".nav__item")')
         .then((hasBadge) => {
           fs.writeFileSync(marker, JSON.stringify({ ...ok, rendererOk: hasBadge }, null, 2));
           setTimeout(() => app.exit(0), 300);
