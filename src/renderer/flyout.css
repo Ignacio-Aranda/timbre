@@ -1,0 +1,326 @@
+/* Tray flyout — a compact panel anchored near the system tray, like the
+   Windows volume / quick-settings flyout. */
+
+.fly-body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-big);
+}
+body.mica.fly-body {
+  background: transparent;
+}
+
+/* ---- Header ----------------------------------------------------------- */
+
+.fly-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 10px;
+  flex: none;
+}
+.fly-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fly-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  color: var(--on-accent);
+  background: var(--accent);
+}
+.fly-mark .ico {
+  width: 18px;
+  height: 18px;
+}
+.fly-brand__t {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.fly-brand__t strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.fly-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+.fly-status .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+.fly-status.is-on .dot {
+  background: #3bbf6a;
+}
+.fly-status.is-off .dot {
+  background: #d1453b;
+}
+
+.fly-head__actions {
+  display: flex;
+  gap: 2px;
+}
+.iconbtn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  border-radius: var(--r-control);
+  cursor: pointer;
+}
+.iconbtn:hover {
+  background: var(--control-hover);
+  color: var(--text);
+}
+.iconbtn .ico {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---- Devices ---------------------------------------------------------- */
+
+.fly-body-view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 12px 14px;
+}
+.fly-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fly-device {
+  background: var(--layer);
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-card);
+  padding: 12px;
+  box-shadow: var(--shadow);
+}
+.fly-device__top {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 11px;
+}
+.fly-device__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  flex: none;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.fly-device__icon .ico {
+  width: 20px;
+  height: 20px;
+}
+.fly-device__name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.fly-device__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-2);
+  margin-top: 1px;
+}
+.fly-device__status .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3bbf6a;
+}
+.fly-device__status.is-off .dot {
+  background: var(--text-3);
+}
+.fly-device__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fly-device__actions .btn {
+  flex: 1 1 calc(50% - 4px);
+  padding: 9px 10px;
+  font-size: 13px;
+}
+/* The camera button leads, on its own full-width row. */
+.fly-device__actions [data-camera] {
+  flex: 1 1 100%;
+}
+
+.fly-empty {
+  text-align: center;
+  color: var(--text-2);
+  padding: 40px 16px;
+}
+.fly-empty p {
+  margin: 0 0 14px;
+  font-size: 13px;
+}
+
+/* ---- Camera / call ---------------------------------------------------- */
+
+.fly-camera {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px 14px;
+  min-height: 0;
+}
+.fly-stage {
+  position: relative;
+  flex: 1;
+  min-height: 170px;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: #0b0d10;
+  border: 1px solid var(--stroke);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fly-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.fly-ph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.fly-lens {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #30425a, #090d13 72%);
+  box-shadow: inset 0 0 0 4px #0d1118, inset 0 0 14px #000;
+  z-index: 1;
+}
+.ring-wave {
+  position: absolute;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  opacity: 0;
+}
+.fly-body.is-ringing .ring-wave {
+  animation: ring 2.2s ease infinite;
+}
+.fly-body.is-ringing .ring-wave--2 {
+  animation-delay: 1.1s;
+}
+@keyframes ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.fly-stage__grad {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.78), transparent 45%);
+  pointer-events: none;
+}
+.fly-back {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  cursor: pointer;
+}
+.fly-back:hover {
+  background: rgba(0, 0, 0, 0.65);
+}
+.fly-back .ico {
+  width: 18px;
+  height: 18px;
+}
+.fly-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 18px 14px 12px;
+  color: #fff;
+}
+.fly-eyebrow {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffffcc;
+}
+.fly-caption h2 {
+  font-size: 17px;
+  color: #fff;
+}
+.fly-cam-status {
+  margin: 8px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-3);
+  min-height: 15px;
+}
+.fly-cam-actions {
+  display: flex;
+  gap: 8px;
+}
+.fly-cam-actions .btn {
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 4px;
+  font-size: 11.5px;
+}
+.fly-cam-actions .btn .ico {
+  width: 19px;
+  height: 19px;
+}
+.btn--accept {
+  background: #107c41;
+  color: #fff;
+  border-color: transparent;
+}
+.btn--accept:hover {
+  background: #0e6d39;
+  color: #fff;
+}
+/* Hang-up icon is the phone rotated. */
+#fly-hangup .ico {
+  transform: rotate(135deg);
+}

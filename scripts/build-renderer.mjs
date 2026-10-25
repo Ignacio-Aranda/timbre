@@ -23,7 +23,7 @@ const common = {
 };
 
 const entries = [
-  { in: path.join(rendererDir, 'call.js'), out: path.join(rendererDir, 'call.bundle.js') },
+  { in: path.join(rendererDir, 'flyout.js'), out: path.join(rendererDir, 'flyout.bundle.js') },
   { in: path.join(rendererDir, 'home.js'), out: path.join(rendererDir, 'home.bundle.js') },
 ];
 

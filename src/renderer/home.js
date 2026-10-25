@@ -277,6 +277,7 @@ function esc(s) {
 resetLog();
 api.getEnv().then(applyEnv);
 api.onTheme(applyEnv);
+api.onGoView?.((view) => showView(view === 'log' ? 'log' : view === 'settings' ? 'settings' : 'devices'));
 api.onState((s) => {
   state = s;
   render();

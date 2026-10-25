@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, dialog, nativeImage, shell, nativeTheme, systemPreferences } = require('electron');
+const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, dialog, nativeImage, shell, nativeTheme, systemPreferences, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -49,7 +49,8 @@ let api = null;
 let push = null;
 let tray = null;
 let homeWindow = null;
-let callWindow = null;
+let flyoutWindow = null;
+let sessionActive = false; // a camera/call is live in the flyout
 let pairings = [];
 let deviceExtras = new Map(); // deviceId -> { panels: [...], canSwitch: bool }
 let quitting = false;
@@ -171,8 +172,8 @@ async function onPushNotification(n) {
     // On-demand camera (we asked the panel to wake): show video, no ringing.
     await handleIncomingCall(n, { mode: 'camera' });
   } else if (n.type === 'ChangeVideoSource') {
-    // The panel moved us to another camera: follow the new room if a window is up.
-    if (callWindow && !callWindow.isDestroyed() && callWindow.isVisible()) {
+    // The panel moved us to another camera: follow it in the flyout if it's up.
+    if (sessionActive && flyoutWindow && !flyoutWindow.isDestroyed() && flyoutWindow.isVisible()) {
       await repointCall(n);
     } else {
       await handleIncomingCall(n, { mode: 'camera' });
@@ -222,17 +223,39 @@ async function buildCallInfo(n, mode) {
 
 async function handleIncomingCall(n, { mode }) {
   const callInfo = await buildCallInfo(n, mode);
-  showCallWindow(callInfo);
+  sessionActive = true;
+  showFlyout();
+  sendToFlyout('incoming-call', {
+    ...callInfo,
+    settings: {
+      ringVolume: stores.settings.get('ringVolume'),
+      ringForcesSound: stores.settings.get('ringForcesSound'),
+      showVideo: stores.settings.get('showVideoOnRing'),
+    },
+  });
   if (mode === 'ring') {
-    // System toast too, so it reaches the user even if the window is covered.
+    // System toast too, so it reaches the user even if the panel is covered.
     notifyInfo(callInfo.title, callInfo.body, { urgent: true });
   }
 }
 
-// The panel switched cameras: hand the call window the new room to re-join.
+// The panel switched cameras: hand the flyout the new room to re-join.
 async function repointCall(n) {
   const callInfo = await buildCallInfo(n, 'camera');
-  callWindow.webContents.send('switch-room', callInfo);
+  sendToFlyout('switch-room', callInfo);
+}
+
+function endCall(reason) {
+  sessionActive = false;
+  sendToFlyout('call:ended', { reason });
+}
+
+function sendToFlyout(channel, payload) {
+  if (flyoutWindow && !flyoutWindow.isDestroyed()) {
+    const deliver = () => flyoutWindow.webContents.send(channel, payload);
+    if (flyoutWindow.webContents.isLoading()) flyoutWindow.webContents.once('did-finish-load', deliver);
+    else deliver();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -244,8 +267,69 @@ function appIcon() {
   return fs.existsSync(p) ? nativeImage.createFromPath(p) : nativeImage.createEmpty();
 }
 
-function createHomeWindow() {
+// The tray flyout — the primary surface, anchored bottom-right like the volume
+// panel. The full window opens only for Settings/Log.
+const FLYOUT_W = 368;
+const FLYOUT_H = 540;
+
+function createFlyout() {
+  if (flyoutWindow) return flyoutWindow;
+  flyoutWindow = new BrowserWindow({
+    width: FLYOUT_W,
+    height: FLYOUT_H,
+    show: false,
+    frame: false,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    fullscreenable: false,
+    icon: appIcon(),
+    title: 'Timbre',
+    backgroundColor: isWin11 ? '#00000000' : nativeTheme.shouldUseDarkColors ? '#202020' : '#f3f3f3',
+    ...(isWin11 ? { backgroundMaterial: 'mica', roundedCorners: true } : {}),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  flyoutWindow.loadFile(path.join(RENDERER_DIR, 'flyout.html'));
+  flyoutWindow.on('blur', () => {
+    // Behave like the system flyout: close on focus loss, unless a call/camera
+    // session is live.
+    if (!sessionActive && flyoutWindow.isVisible()) flyoutWindow.hide();
+  });
+  return flyoutWindow;
+}
+
+function positionFlyout() {
+  const wa = screen.getPrimaryDisplay().workArea;
+  const x = wa.x + wa.width - FLYOUT_W - 12;
+  const y = wa.y + wa.height - FLYOUT_H - 12;
+  flyoutWindow.setBounds({ x, y, width: FLYOUT_W, height: FLYOUT_H });
+}
+
+function showFlyout() {
+  createFlyout();
+  positionFlyout();
+  flyoutWindow.setAlwaysOnTop(true, 'screen-saver');
+  flyoutWindow.show();
+  flyoutWindow.focus();
+}
+
+function toggleFlyout() {
+  createFlyout();
+  if (flyoutWindow.isVisible() && !sessionActive) flyoutWindow.hide();
+  else showFlyout();
+}
+
+// The full window: opened on demand for Settings and the Log.
+function createHomeWindow(view) {
   if (homeWindow) {
+    if (view) homeWindow.webContents.send('go-view', view);
     homeWindow.show();
     homeWindow.focus();
     return homeWindow;
@@ -267,8 +351,6 @@ function createHomeWindow() {
       nodeIntegration: false,
     },
   };
-  // Native Windows 11 backdrop (Mica). The renderer keeps its base layer
-  // translucent so the backdrop shows through, Fluent-style.
   if (isWin11) {
     opts.backgroundMaterial = 'mica';
     opts.backgroundColor = '#00000000';
@@ -276,7 +358,8 @@ function createHomeWindow() {
   homeWindow = new BrowserWindow(opts);
   homeWindow.loadFile(path.join(RENDERER_DIR, 'home.html'));
   homeWindow.once('ready-to-show', () => {
-    if (!stores.settings.get('startMinimized') || !haveCredentials()) homeWindow.show();
+    if (view) homeWindow.webContents.send('go-view', view);
+    homeWindow.show();
     broadcastState();
   });
   homeWindow.on('close', (e) => {
@@ -288,58 +371,6 @@ function createHomeWindow() {
   return homeWindow;
 }
 
-function showCallWindow(callInfo) {
-  if (!callWindow) {
-    callWindow = new BrowserWindow({
-      width: 420,
-      height: 640,
-      show: false,
-      frame: true,
-      resizable: true,
-      alwaysOnTop: true,
-      skipTaskbar: false,
-      icon: appIcon(),
-      title: 'Timbre',
-      autoHideMenuBar: true,
-      backgroundColor: nativeTheme.shouldUseDarkColors ? '#202020' : '#f3f3f3',
-      webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
-        contextIsolation: true,
-        nodeIntegration: false,
-      },
-    });
-    callWindow.loadFile(path.join(RENDERER_DIR, 'call.html'));
-    callWindow.on('closed', () => {
-      callWindow = null;
-    });
-  }
-  const send = () => {
-    callWindow.show();
-    callWindow.focus();
-    callWindow.setAlwaysOnTop(true, 'screen-saver');
-    callWindow.webContents.send('incoming-call', {
-      ...callInfo,
-      settings: {
-        ringSound: stores.settings.get('ringSound'),
-        ringVolume: stores.settings.get('ringVolume'),
-        ringForcesSound: stores.settings.get('ringForcesSound'),
-        showVideo: stores.settings.get('showVideoOnRing'),
-      },
-    });
-  };
-  if (callWindow.webContents.isLoading()) {
-    callWindow.webContents.once('did-finish-load', send);
-  } else {
-    send();
-  }
-}
-
-function endCall(reason) {
-  if (callWindow && !callWindow.isDestroyed()) {
-    callWindow.webContents.send('call:ended', { reason });
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Tray
 // ---------------------------------------------------------------------------
@@ -347,26 +378,19 @@ function endCall(reason) {
 function createTray() {
   tray = new Tray(appIcon());
   tray.setToolTip('Timbre — portero Fermax');
-  tray.on('click', () => createHomeWindow());
+  // Left click opens the flyout like the system tray icons do.
+  tray.on('click', () => toggleFlyout());
   updateTrayMenu();
 }
 
 function updateTrayMenu() {
   if (!tray) return;
-  const deviceItems = pairings.map((p) => ({
-    label: (p.tag || p.deviceId) + (p.deviceId === stores.settings.get('activeDeviceId') ? '  ✓' : ''),
-    click: () => {
-      stores.settings.set('activeDeviceId', p.deviceId);
-      updateTrayMenu();
-      broadcastState();
-    },
-  }));
-
   const menu = Menu.buildFromTemplate([
     { label: haveCredentials() ? 'Timbre: a la escucha' : 'Timbre: sin configurar', enabled: false },
     { type: 'separator' },
-    { label: 'Abrir ventana', click: () => createHomeWindow() },
-    ...(deviceItems.length ? [{ type: 'separator' }, { label: 'Dispositivo activo', enabled: false }, ...deviceItems] : []),
+    { label: 'Dispositivos', click: () => toggleFlyout() },
+    { label: 'Ajustes', click: () => createHomeWindow('settings') },
+    { label: 'Registro', click: () => createHomeWindow('log') },
     { type: 'separator' },
     { label: 'Salir', click: () => { quitting = true; app.quit(); } },
   ]);
@@ -418,14 +442,7 @@ function doorsOf(deviceId) {
 function notifyInfo(title, body, { urgent = false } = {}) {
   if (!Notification.isSupported()) return;
   const n = new Notification({ title, body, urgency: urgent ? 'critical' : 'normal', silent: false });
-  n.on('click', () => {
-    if (callWindow) {
-      callWindow.show();
-      callWindow.focus();
-    } else {
-      createHomeWindow();
-    }
-  });
+  n.on('click', () => showFlyout());
   n.show();
 }
 
@@ -575,11 +592,17 @@ ipcMain.handle('camera:open', async (_e, { deviceId } = {}) => {
     const device = deviceId ? deviceById(deviceId) : activeDevice();
     if (!device) return { error: 'No hay ningún portero disponible' };
     if (!push?.fcmToken) return { error: 'Aún no hay conexión de avisos; espera unos segundos' };
+    // The panel's video arrives via an Autoon push; keep the flyout pinned open.
+    sessionActive = true;
     log(`Activando cámara: ${device.tag || device.deviceId}…`);
     const res = await api.autoOn(device.deviceId, push.fcmToken);
-    if (!res) return { error: 'El portero no respondió a tiempo' };
+    if (!res) {
+      sessionActive = false;
+      return { error: 'El portero no respondió a tiempo' };
+    }
     return { ok: true };
   } catch (err) {
+    sessionActive = false;
     return { error: err.message };
   }
 });
@@ -595,18 +618,20 @@ ipcMain.handle('camera:switch', async (_e, { deviceId } = {}) => {
   }
 });
 
-ipcMain.handle('call:dismiss', () => {
-  if (callWindow && !callWindow.isDestroyed()) callWindow.hide();
+// Open the full window on a given view (settings / log).
+ipcMain.handle('main:open', (_e, view) => {
+  createHomeWindow(view);
   return true;
+});
+
+// The flyout's call/camera session ended: let the flyout close on blur again.
+ipcMain.on('flyout:ended', () => {
+  sessionActive = false;
 });
 
 ipcMain.handle('call:log', (_e, line) => {
   log('[llamada] ' + line);
   return true;
-});
-
-ipcMain.on('call:hide', () => {
-  if (callWindow && !callWindow.isDestroyed()) callWindow.hide();
 });
 
 // Dev/testing: simulate an incoming call without the cloud.
@@ -632,7 +657,7 @@ ipcMain.handle('debug:simulate-call', async () => {
 // Lifecycle
 // ---------------------------------------------------------------------------
 
-app.on('second-instance', () => createHomeWindow());
+app.on('second-instance', () => toggleFlyout());
 
 app.whenReady().then(async () => {
   stores = createStores(app.getPath('userData'));
@@ -647,14 +672,19 @@ app.whenReady().then(async () => {
   app.setLoginItemSettings({ openAtLogin: !!stores.settings.get('autostart'), openAsHidden: true });
 
   createTray();
-  createHomeWindow();
+  createFlyout(); // ready, hidden, behind the tray icon
+
+  // First run: open the full window on setup. Otherwise live in the tray.
+  if (!haveCredentials()) {
+    createHomeWindow('settings');
+  }
 
   // In a render smoke test we don't touch the network.
   if (haveCredentials() && !process.env.TIMBRE_SMOKE) {
     await startServices();
   }
 
-  app.on('activate', () => createHomeWindow());
+  app.on('activate', () => toggleFlyout());
 
   // Smoke test hook: prove the full main process boots and windows render,
   // then exit. Never used in normal runs.
@@ -662,17 +692,18 @@ app.whenReady().then(async () => {
     const marker = path.isAbsolute(process.env.TIMBRE_SMOKE)
       ? process.env.TIMBRE_SMOKE
       : path.join(app.getPath('temp'), process.env.TIMBRE_SMOKE);
+    const win = flyoutWindow || homeWindow;
     const ok = {
-      homeWindow: !!homeWindow,
+      flyout: !!flyoutWindow,
       tray: !!tray,
       configured: haveCredentials(),
       windows: BrowserWindow.getAllWindows().length,
     };
     const checkRender = () => {
-      homeWindow.webContents
-        .executeJavaScript('!!document.querySelector(".brand") && !!document.querySelector(".nav__item")')
-        .then((hasBadge) => {
-          fs.writeFileSync(marker, JSON.stringify({ ...ok, rendererOk: hasBadge }, null, 2));
+      win.webContents
+        .executeJavaScript('!!document.querySelector(".fly-brand, .brand")')
+        .then((rendererOk) => {
+          fs.writeFileSync(marker, JSON.stringify({ ...ok, rendererOk }, null, 2));
           setTimeout(() => app.exit(0), 300);
         })
         .catch((err) => {
@@ -680,8 +711,8 @@ app.whenReady().then(async () => {
           setTimeout(() => app.exit(1), 300);
         });
     };
-    if (homeWindow.webContents.isLoading()) {
-      homeWindow.webContents.once('did-finish-load', checkRender);
+    if (win.webContents.isLoading()) {
+      win.webContents.once('did-finish-load', checkRender);
     } else {
       checkRender();
     }
