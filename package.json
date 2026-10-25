@@ -18,9 +18,9 @@
     "start": "npm run prepare:all && electron .",
     "dev": "npm run prepare:all && electron . --dev",
     "test": "node --test \"test/unit/*.test.js\"",
-    "dist:win": "npm run prepare:all && electron-builder --win --x64",
-    "dist:linux": "npm run prepare:all && electron-builder --linux --x64",
-    "dist": "npm run prepare:all && electron-builder"
+    "dist:win": "npm run prepare:all && electron-builder --win --x64 -p never",
+    "dist:linux": "npm run prepare:all && electron-builder --linux --x64 -p never",
+    "dist": "npm run prepare:all && electron-builder -p never"
   },
   "dependencies": {
     "@eneris/push-receiver": "4.4.0",

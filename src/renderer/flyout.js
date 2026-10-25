@@ -112,7 +112,7 @@ document.addEventListener('click', async (e) => {
   if (door) {
     door.disabled = true;
     const res = await api.openDoorDevice(door.dataset.door, door.dataset.doorName || undefined);
-    flash(door, res?.ok ? 'Abierta ✓' : 'Error');
+    flash(door, res?.ok ? 'Abierta' : 'Error');
     door.disabled = false;
   }
 });

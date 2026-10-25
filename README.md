@@ -1,63 +1,83 @@
-# 🔔 Timbre
+# Timbre
 
-**Cliente de escritorio no oficial para porteros Fermax DuoxMe / Blue.**
-Entérate de que llaman a la puerta desde el ordenador —aunque tengas el móvil en
-silencio y los cascos puestos— y abre sin levantarte. Para **Windows** y **Linux**.
+Cliente de escritorio no oficial para porteros Fermax DuoxMe / Blue. Avisa en el
+ordenador de que llaman a la puerta —aunque el móvil esté en silencio y con los
+cascos puestos—, muestra la cámara, permite hablar con el visitante y abrir la
+puerta. Para Windows y Linux.
 
 > Proyecto independiente, sin relación con Fermax. Reconstruye el protocolo de la
 > app oficial para que puedas usar tu propio portero desde el PC. Úsalo bajo tu
 > responsabilidad.
 
----
+## Por qué existe
 
-## Por qué
+La app oficial DuoxMe solo existe para móvil y tiene dos pegas conocidas:
 
-La app oficial DuoxMe solo existe para móvil, y tiene un par de pegas conocidas:
+- El aviso es de tipo "llamada": con el móvil en silencio no suena, y no hay forma
+  de forzar que suene igualmente.
+- Si la sesión ha caducado, la llamada se descarta sin avisar, y con la app en
+  segundo plano puedes no enterarte.
 
-- **El tono es de tipo "llamada".** Con el móvil en silencio no suena, y no hay
-  forma de dejarlo configurado para que suene igualmente.
-- **Si la sesión ha caducado, la llamada se descarta sin avisar.** Con la app en
-  segundo plano puedes no enterarte hasta el día siguiente.
-
-Timbre resuelve lo primero de raíz: **reproduce su propio tono por la salida de
-audio del PC** (tus cascos), donde el "modo silencio" del móvil no pinta nada.
+Timbre resuelve lo primero reproduciendo su propio tono por la salida de audio del
+PC, donde el modo silencio del móvil no interviene.
 
 ## Qué hace
 
-- 🔔 **Aviso al llamar** — notificación del sistema **y tono propio por los cascos**.
-- 📸 **Foto del visitante** cuando el portero la envía.
-- 🎥 **Vídeo en directo** de la cámara del portero (WebRTC/mediasoup).
-- 🎙️ **Hablar con el visitante** (manos libres desde el PC).
-- 🔓 **Abrir la puerta** con un botón.
-- 🖥️ **Vive en la bandeja del sistema** y arranca al iniciar sesión.
+- Avisa al llamar, con notificación del sistema y tono propio por los altavoces o
+  los cascos del PC.
+- Muestra la foto del visitante cuando el portero la envía.
+- Reproduce el vídeo en directo de la cámara (WebRTC / mediasoup).
+- Permite hablar con el visitante en manos libres.
+- Abre la puerta con un botón.
+- Permite ver las cámaras y abrir la puerta en cualquier momento, sin esperar a
+  que llamen.
+- Vive en la bandeja del sistema y puede arrancar al iniciar sesión.
 
-## Cómo funciona
+## Compatibilidad
 
-Timbre se comporta como un dispositivo más de tu cuenta Fermax:
+Probado con porteros Fermax DUOX PLUS (familia VEO-XS / VEO-XL WiFi). Otros modelos
+compatibles con DuoxMe / Blue deberían funcionar.
 
-1. Inicia sesión en la nube de Fermax (OAuth2) con tu cuenta.
-2. Se registra en Firebase Cloud Messaging y entrega su token a Fermax, igual que
-   hace el móvil, para recibir el aviso cuando alguien llama.
-3. Al llamar, Fermax envía un *push* con la sala y el servidor de señalización;
-   Timbre se conecta por Socket.IO + mediasoup para el vídeo y el audio.
-4. La puerta se abre con la API de la nube (`directed-opendoor` / `incall/opendoor`).
+## Instalación
 
-> **Importante:** el portero habla siempre con la nube de Fermax. Timbre **no**
-> elimina esa dependencia; es un cliente alternativo, no un servidor local.
+No hace falta compilar nada. Descarga el instalador de la última versión desde la
+página de [Releases](../../releases).
 
-## Requisitos
+### Windows
 
-- **Node.js 22+** y **npm** (para compilar desde el código).
-- Tu propia copia del **APK de DuoxMe** (para leer la configuración; ver abajo).
-- Un portero Fermax compatible con DuoxMe / Blue (probado con la familia
-  VEO-XS/VEO-XL WiFi DUOX PLUS).
+1. Descarga `Timbre-Setup-X.Y.Z.exe`.
+2. Ábrelo y sigue el asistente. La aplicación no está firmada, así que la primera
+   vez Windows SmartScreen mostrará un aviso: pulsa **Más información** y luego
+   **Ejecutar de todas formas**.
 
-## Puesta en marcha
+Si prefieres no instalar, usa la versión portable `Timbre-X.Y.Z.exe`, que se
+ejecuta directamente.
 
-### 1. Consigue el APK (una sola vez)
+### Linux
 
-Timbre **no incluye** ninguna credencial de Fermax. Las lee de tu propia copia de
-la app, que como cliente de pago tienes derecho a usar para interoperar.
+Debian o Ubuntu, con el paquete `.deb`:
+
+```bash
+sudo apt install ./timbre_X.Y.Z_amd64.deb
+```
+
+Cualquier distribución, con el AppImage:
+
+```bash
+chmod +x Timbre-X.Y.Z.AppImage
+./Timbre-X.Y.Z.AppImage
+```
+
+## Primer uso
+
+Timbre se conecta a tu cuenta de Fermax, igual que la app del móvil. La
+configuración se hace una sola vez, desde la propia aplicación, en **Ajustes**.
+
+### 1. Consigue el APK de DuoxMe
+
+Timbre no incluye ninguna credencial de Fermax: las lee de tu propia copia de la
+app oficial, que como cliente de pago tienes derecho a usar para interoperar con
+tu equipo.
 
 Desde un Android con la app instalada y la depuración USB activada:
 
@@ -66,61 +86,81 @@ adb shell pm path com.fermax.blue.app
 adb pull /data/app/.../base.apk
 ```
 
-(Si `pm path` lista varios `split_config.*.apk`, con `base.apk` basta para las
-credenciales.) También puedes bajar el APK de una fuente de confianza.
+Si `pm path` lista varios `split_config.*.apk`, con `base.apk` es suficiente.
+También puedes obtener el APK de una fuente de confianza.
 
-### 2. Instala y arranca
+### 2. Configura la cuenta
+
+En **Ajustes**, dentro de Timbre:
+
+1. Selecciona tu `base.apk`. Timbre extrae la configuración de Firebase y las
+   credenciales de OAuth.
+2. Introduce el correo y la contraseña de tu cuenta de Fermax e inicia sesión.
+
+Hecho: Timbre queda a la escucha en la bandeja del sistema.
+
+### Usuario dedicado (recomendado)
+
+Fermax limita las sesiones activas por cuenta. Si usas tu cuenta principal, el
+móvil puede dejar de recibir avisos, o al revés. Lo recomendable es crear un
+usuario aparte para el PC:
+
+1. En la app DuoxMe: **Ajustes → Usuarios → Invitar usuario**.
+2. Invita a un correo nuevo (los alias de Gmail del tipo `tucorreo+pc@gmail.com`
+   sirven).
+3. Completa el registro desde el enlace del correo y usa esa cuenta en Timbre.
+
+## Cómo funciona
+
+Timbre se comporta como un dispositivo más de tu cuenta de Fermax:
+
+1. Inicia sesión en la nube de Fermax (OAuth2).
+2. Se registra en Firebase Cloud Messaging y entrega su token a Fermax, igual que
+   el móvil, para recibir el aviso cuando alguien llama.
+3. Al llamar, Fermax envía un aviso con la sala y el servidor de señalización;
+   Timbre se conecta por Socket.IO y mediasoup para el vídeo y el audio.
+4. La puerta se abre a través de la API de la nube.
+
+El portero habla siempre con la nube de Fermax. Timbre no elimina esa dependencia:
+es un cliente alternativo, no un servidor local.
+
+## Compilar desde el código
+
+Solo si quieres compilarlo tú mismo. Necesitas Node.js 22 o superior y npm.
 
 ```bash
 npm install
 npm start
 ```
 
-En la ventana de Timbre:
-
-1. **Paso 1 — Seleccionar APK:** elige tu `base.apk`. Timbre extrae Firebase y las
-   credenciales OAuth y verifica las URLs de producción.
-2. **Paso 2 — Tu cuenta:** introduce correo y contraseña de Fermax e inicia sesión.
-
-Listo: Timbre queda a la escucha en la bandeja. Pulsa **Probar llamada** para ver
-la ventana de llamada sin esperar a que llamen de verdad.
-
-### Usuario dedicado (recomendado)
-
-Fermax **limita las sesiones activas por cuenta**. Si usas tu cuenta principal, el
-móvil puede dejar de recibir avisos (o viceversa). Crea un usuario aparte para el PC:
-
-1. En la app DuoxMe: **Ajustes → Usuarios → Invitar usuario**.
-2. Invita a un correo nuevo (los alias `tucorreo+pc@gmail.com` de Gmail valen).
-3. Completa el registro desde el enlace del email y usa esa cuenta en Timbre.
-
-## Compilar instaladores
+Para generar los instaladores:
 
 ```bash
-npm run dist:win      # Windows: instalador NSIS + portable (.exe)
-npm run dist:linux    # Linux: AppImage + .deb
+npm run dist:win     # Windows: instalador y portable (.exe)
+npm run dist:linux   # Linux: .deb y AppImage
 ```
 
-Los artefactos quedan en `dist-build/`. El flujo de CI
-([`.github/workflows/build.yml`](.github/workflows/build.yml)) compila ambos y,
-al etiquetar `vX.Y.Z`, publica una release con los instaladores.
+Los resultados quedan en `dist-build/`. El flujo de integración continua
+([`.github/workflows/build.yml`](.github/workflows/build.yml)) compila ambas
+plataformas y, al etiquetar una versión `vX.Y.Z`, publica una release con los
+instaladores.
 
-## Desarrollo
+## Estructura del proyecto
 
 ```
 src/main/        Proceso principal de Electron
-  apk/           Lectura de APK (ARSC + DEX) y extracción de credenciales
-  fermax-api.js  Cliente REST de la nube Fermax
+  apk/           Lectura del APK (ARSC + DEX) y extracción de credenciales
+  fermax-api.js  Cliente REST de la nube de Fermax
   push.js        Escucha de avisos por FCM
   store.js       Configuración y credenciales en userData
-src/renderer/    Ventanas (home = configuración, call = llamada con vídeo)
-scripts/         Build del renderer (esbuild) y generación de assets
+src/renderer/    Interfaz: ventana de configuración y panel de la bandeja
+scripts/         Build del renderer (esbuild) y generación de recursos
 test/unit/       Pruebas (node --test)
 ```
 
 ```bash
 npm test     # pruebas unitarias
-npm run dev  # arranca con DevTools
+npm run dev  # arranca con las DevTools abiertas
 ```
 
 Para probar el extractor contra un APK real:
@@ -131,31 +171,29 @@ TIMBRE_TEST_APK=/ruta/base.apk npm test
 
 ## Privacidad y seguridad
 
-- Las credenciales se guardan **solo en tu equipo**, en el directorio `userData`
-  de la app (`credentials.json`, con permisos restringidos). No se envían a ningún
+- Las credenciales se guardan solo en tu equipo, en el directorio `userData` de la
+  aplicación (`credentials.json`, con permisos restringidos). No se envían a ningún
   sitio salvo a los propios servidores de Fermax.
-- El `.gitignore` evita subir por error APKs o credenciales.
-- Nunca publiques tu `credentials.json`, tokens, usuario o contraseña.
+- El `.gitignore` evita subir por error el APK o las credenciales.
+- No publiques nunca tu `credentials.json`, tus tokens ni tu usuario y contraseña.
 
 ## Créditos
 
-El trabajo de la comunidad de código abierto hizo posible entender el protocolo:
+El trabajo de la comunidad de código abierto fue clave para entender el protocolo:
 
-- [bvis/fermax-blue-hass](https://github.com/bvis/fermax-blue-hass) — integración de
+- [bvis/fermax-blue-hass](https://github.com/bvis/fermax-blue-hass): integración de
   Home Assistant, referencia del flujo de avisos y vídeo.
 - [marcosav/fermax-blue-intercom](https://github.com/marcosav/fermax-blue-intercom)
 - [AfonsoFGarcia/hass-bluecon](https://github.com/AfonsoFGarcia/hass-bluecon) y
   [cvc90/HASS-BlueCon](https://github.com/cvc90/HASS-BlueCon)
 
-Si Timbre te resulta útil, considera dar una estrella también a esos proyectos.
-
 ## Aviso legal
 
 Timbre es software independiente, sin afiliación ni respaldo de Fermax. "Fermax",
 "DuoxMe" y "Blue" son marcas de sus respectivos titulares. Extraer la configuración
-de una app que posees como cliente de pago, para interoperar con tu propio equipo y
-uso personal, es un ejercicio legítimo de tus derechos como consumidor. El protocolo
-de la nube de Fermax puede cambiar y dejar de funcionar en cualquier momento.
+de una aplicación que posees como cliente de pago, para interoperar con tu propio
+equipo y uso personal, es un ejercicio legítimo de tus derechos. El protocolo de la
+nube de Fermax puede cambiar y dejar de funcionar en cualquier momento.
 
 ## Licencia
 
