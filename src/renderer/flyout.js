@@ -201,6 +201,10 @@ function prepareCameraView(mode, title) {
   show(el('fly-photo'), false);
   show(el('fly-video'), false);
   show(el('fly-ph'), true);
+  // During an incoming call, "Contestar" is the single coloured primary, so
+  // "Abrir" stays neutral; when it's an on-demand camera (no call), "Abrir" is
+  // the main action and takes the accent.
+  el('fly-open').classList.toggle('btn--accent', mode === 'camera');
   el('fly-open').disabled = false;
 }
 
