@@ -64,51 +64,107 @@ function makeRing() {
 // ---- icon.png -------------------------------------------------------------
 // A minimal 256x256 PNG drawn by hand: a bell glyph on a rounded blue tile.
 
+// A clean app icon: a rounded-square tile with a vertical blue gradient and a
+// simple white bell. Rendered at 4x and box-downsampled for smooth edges, so no
+// image library is needed.
 function makeIcon() {
   const size = 256;
-  const px = Buffer.alloc(size * size * 4);
+  const SS = 4; // supersample factor
+  const N = size * SS;
+  const hi = new Float32Array(N * N * 4);
 
-  const bg = [76, 141, 255, 255]; // blue
-  const bell = [255, 255, 255, 255];
+  const cx = N / 2;
+  const tileR = 0.223 * N; // corner radius of the tile
 
-  const set = (x, y, c) => {
-    if (x < 0 || y < 0 || x >= size || y >= size) return;
-    const o = (y * size + x) * 4;
-    px[o] = c[0]; px[o + 1] = c[1]; px[o + 2] = c[2]; px[o + 3] = c[3];
+  // Rounded-rect signed test (true inside).
+  const inTile = (x, y) => {
+    const nx = Math.min(x, N - x);
+    const ny = Math.min(y, N - y);
+    if (nx >= tileR && ny >= tileR) return true;
+    const dx = Math.max(tileR - nx, 0);
+    const dy = Math.max(tileR - ny, 0);
+    return dx * dx + dy * dy <= tileR * tileR;
   };
 
-  const r = 48;
-  const inRounded = (x, y) => {
-    const nx = Math.min(x, size - 1 - x);
-    const ny = Math.min(y, size - 1 - y);
-    if (nx >= r || ny >= r) return true;
-    const dx = r - nx;
-    const dy = r - ny;
-    return dx * dx + dy * dy <= r * r;
+  const circle = (x, y, ox, oy, r) => (x - ox) ** 2 + (y - oy) ** 2 <= r * r;
+
+  // Bell silhouette as a union of simple shapes, in icon units scaled to N.
+  const u = N / 256;
+  const bell = (x, y) => {
+    const bx = x / u;
+    const by = y / u;
+    const mx = 128;
+    // knob + neck
+    if (circle(bx, by, mx, 72, 15)) return true;
+    if (bx > mx - 8 && bx < mx + 8 && by > 70 && by < 96) return true;
+    // shoulders/dome
+    if (circle(bx, by, mx, 120, 44) && by < 128) return true;
+    // flaring skirt
+    if (by >= 118 && by <= 176) {
+      const half = 38 + ((by - 118) / 58) * 32; // 38 -> 70
+      if (bx > mx - half && bx < mx + half) return true;
+    }
+    // rim
+    if (by >= 172 && by <= 190 && bx > mx - 76 && bx < mx + 76) return true;
+    // clapper
+    if (circle(bx, by, mx, 202, 13)) return true;
+    return false;
   };
 
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      if (inRounded(x, y)) set(x, y, bg);
-      else set(x, y, [0, 0, 0, 0]);
+  for (let y = 0; y < N; y++) {
+    const t = y / N;
+    // gradient: top #4ca6ff -> bottom #0a63be
+    const br = 76 + (10 - 76) * t;
+    const bg = 166 + (99 - 166) * t;
+    const bb = 255 + (190 - 255) * t;
+    for (let x = 0; x < N; x++) {
+      const o = (y * N + x) * 4;
+      if (!inTile(x, y)) {
+        hi[o + 3] = 0;
+        continue;
+      }
+      if (bell(x, y)) {
+        hi[o] = 255;
+        hi[o + 1] = 255;
+        hi[o + 2] = 255;
+      } else {
+        hi[o] = br;
+        hi[o + 1] = bg;
+        hi[o + 2] = bb;
+      }
+      hi[o + 3] = 255;
     }
   }
 
-  // Bell body: a trapezoid-ish dome with a clapper.
-  const cx = 128;
-  for (let y = 70; y < 180; y++) {
-    const prog = (y - 70) / 110;
-    const halfW = 20 + prog * 55;
-    for (let x = cx - halfW; x <= cx + halfW; x++) set(Math.round(x), y, bell);
-  }
-  // Rim
-  for (let x = cx - 85; x <= cx + 85; x++) { set(x, 181, bell); set(x, 182, bell); }
-  // Top knob
-  for (let y = 56; y < 72; y++) for (let x = cx - 8; x <= cx + 8; x++) set(x, y, bell);
-  // Clapper
-  for (let y = 186; y < 202; y++) {
-    const hw = 10 - (y - 186) * 0.1;
-    for (let x = cx - hw; x <= cx + hw; x++) set(Math.round(x), y, bell);
+  // Box downsample SSxSS -> 1x with straight-alpha averaging.
+  const px = Buffer.alloc(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      let r = 0,
+        g = 0,
+        b = 0,
+        a = 0;
+      for (let sy = 0; sy < SS; sy++) {
+        for (let sx = 0; sx < SS; sx++) {
+          const o = ((y * SS + sy) * N + (x * SS + sx)) * 4;
+          const al = hi[o + 3] / 255;
+          r += hi[o] * al;
+          g += hi[o + 1] * al;
+          b += hi[o + 2] * al;
+          a += hi[o + 3];
+        }
+      }
+      const n = SS * SS;
+      const alpha = a / n;
+      const o = (y * size + x) * 4;
+      if (alpha > 0) {
+        const wsum = a / 255;
+        px[o] = Math.round(r / wsum);
+        px[o + 1] = Math.round(g / wsum);
+        px[o + 2] = Math.round(b / wsum);
+      }
+      px[o + 3] = Math.round(alpha);
+    }
   }
 
   fs.writeFileSync(path.join(assets, 'icon.png'), encodePng(px, size, size));

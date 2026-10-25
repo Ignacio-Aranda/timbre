@@ -318,6 +318,14 @@ class FermaxApi {
     });
   }
 
+  // Ask the panel to move to the next camera. Like auto-on, the new room then
+  // arrives via a ChangeVideoSource push.
+  async changeVideoSource(deviceId, fcmToken) {
+    return this._request('POST', `/deviceaction/api/v2/device/${deviceId}/changevideosource`, {
+      body: { directedToBluestream: fcmToken, directedToSippo: null, callAs: null },
+    });
+  }
+
   // ----- Push token registration ----------------------------------------
 
   async registerAppToken(fcmToken, { active = true, force = false } = {}) {
