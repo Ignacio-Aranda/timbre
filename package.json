@@ -1,0 +1,33 @@
+{
+  "name": "timbre",
+  "productName": "Timbre",
+  "version": "0.1.0",
+  "description": "Cliente de escritorio no oficial para porteros Fermax DuoxMe / Blue (Windows y Linux)",
+  "main": "src/main/main.js",
+  "author": "Ignacio Aranda",
+  "license": "MIT",
+  "private": true,
+  "homepage": "https://github.com/Ignacio-Aranda/timbre",
+  "scripts": {
+    "assets": "node scripts/make-assets.mjs",
+    "build:renderer": "node scripts/build-renderer.mjs",
+    "prepare:all": "npm run assets && npm run build:renderer",
+    "start": "npm run prepare:all && electron .",
+    "dev": "npm run prepare:all && electron . --dev",
+    "test": "node --test \"test/unit/*.test.js\"",
+    "dist:win": "npm run prepare:all && electron-builder --win --x64",
+    "dist:linux": "npm run prepare:all && electron-builder --linux --x64",
+    "dist": "npm run prepare:all && electron-builder"
+  },
+  "dependencies": {
+    "@eneris/push-receiver": "4.4.0",
+    "yauzl": "3.4.0"
+  },
+  "devDependencies": {
+    "electron": "44.9.3",
+    "electron-builder": "26.17.0",
+    "esbuild": "0.28.2",
+    "mediasoup-client": "3.25.3",
+    "socket.io-client": "4.8.4"
+  }
+}

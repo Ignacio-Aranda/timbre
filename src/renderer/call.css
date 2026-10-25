@@ -1,0 +1,127 @@
+:root {
+  --bg: #11131a;
+  --panel: #1b1f2a;
+  --text: #f2f4f8;
+  --muted: #9aa3b2;
+  --green: #2bb673;
+  --green-hi: #35d488;
+  --red: #e5484d;
+  --blue: #4c8dff;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  user-select: none;
+  overflow: hidden;
+}
+
+.drag-bar {
+  height: 28px;
+  -webkit-app-region: drag;
+}
+
+.call {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 28px);
+  padding: 0 16px 18px;
+  gap: 12px;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #05060a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.photo, .video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hidden { display: none !important; }
+
+.header {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 28px 16px 14px;
+  background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.status {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 18px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.btn {
+  -webkit-app-region: no-drag;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--panel);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: filter 0.12s ease, transform 0.05s ease;
+}
+
+.btn:hover:not(:disabled) { filter: brightness(1.15); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+.btn .ico { font-size: 22px; line-height: 1; }
+
+.btn-answer { background: var(--green); }
+.btn-answer:hover:not(:disabled) { background: var(--green-hi); }
+.btn-open { background: var(--blue); }
+.btn-hangup { background: var(--red); }
+
+.btn-mute {
+  flex-direction: row;
+  background: transparent;
+  border: 1px solid #333a49;
+  padding: 10px;
+  font-size: 13px;
+}

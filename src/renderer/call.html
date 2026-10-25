@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; media-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; connect-src https: wss:;" />
+    <title>Llamada</title>
+    <link rel="stylesheet" href="call.css" />
+  </head>
+  <body>
+    <div class="drag-bar"></div>
+    <main class="call">
+      <div class="stage">
+        <img id="photo" class="photo hidden" alt="Visitante" />
+        <video id="video" class="video hidden" autoplay playsinline></video>
+        <div class="header">
+          <h1 id="title">Llamada del portero</h1>
+          <p id="subtitle"></p>
+        </div>
+      </div>
+      <p id="status" class="status">Listo</p>
+      <div class="actions">
+        <button id="btn-open" class="btn btn-open" title="Abrir la puerta">
+          <span class="ico">🔓</span><span>Abrir</span>
+        </button>
+        <button id="btn-answer" class="btn btn-answer" title="Contestar">
+          <span class="ico">📞</span><span>Contestar</span>
+        </button>
+        <button id="btn-hangup" class="btn btn-hangup" title="Colgar">
+          <span class="ico">✕</span><span>Colgar</span>
+        </button>
+      </div>
+      <button id="btn-mute" class="btn btn-mute hidden">Silenciar</button>
+    </main>
+    <script src="call.bundle.js"></script>
+  </body>
+</html>

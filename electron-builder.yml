@@ -1,0 +1,48 @@
+appId: com.ignacioaranda.timbre
+productName: Timbre
+copyright: Copyright © 2026 Ignacio Aranda
+
+directories:
+  output: dist-build
+  buildResources: assets
+
+# Renderer bundles are produced by `npm run build:renderer` before packaging.
+# mediasoup-client / socket.io-client are dev deps bundled into the renderer,
+# so they are never shipped loose; only the main-process deps are packaged.
+files:
+  - src/**/*
+  - assets/**/*
+  - package.json
+  - "!**/*.map"
+
+win:
+  icon: assets/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Timbre
+
+linux:
+  icon: assets/icon.png
+  category: Network
+  synopsis: Portero Fermax DuoxMe en el escritorio
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+
+deb:
+  depends:
+    - libnotify4
+    - libnss3
+    - libsecret-1-0

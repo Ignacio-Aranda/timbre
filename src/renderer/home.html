@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';" />
+    <title>Timbre</title>
+    <link rel="stylesheet" href="home.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <span class="logo">🔔</span>
+        <div>
+          <h1>Timbre</h1>
+          <p class="tagline">Portero Fermax DuoxMe en tu ordenador</p>
+        </div>
+      </div>
+      <span id="badge" class="badge badge-off">Sin configurar</span>
+    </header>
+
+    <main>
+      <!-- Setup -->
+      <section id="setup" class="card">
+        <h2>Puesta en marcha</h2>
+
+        <div class="step">
+          <div class="step-num" id="step1-num">1</div>
+          <div class="step-body">
+            <h3>Credenciales desde tu APK</h3>
+            <p class="muted">
+              Timbre lee la configuración de tu propia copia de la app DuoxMe.
+              Selecciona el <code>base.apk</code> (y los splits si los tienes).
+            </p>
+            <button id="btn-apk" class="btn">Seleccionar APK…</button>
+            <p id="apk-result" class="result"></p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num" id="step2-num">2</div>
+          <div class="step-body">
+            <h3>Tu cuenta de Fermax</h3>
+            <p class="muted">
+              Usa una cuenta dedicada para el PC (invita a un usuario desde la app).
+              Fermax limita las sesiones por cuenta.
+            </p>
+            <label>Correo
+              <input id="acc-user" type="email" autocomplete="username" placeholder="tucorreo+pc@gmail.com" />
+            </label>
+            <label>Contraseña
+              <input id="acc-pass" type="password" autocomplete="current-password" />
+            </label>
+            <button id="btn-login" class="btn" disabled>Iniciar sesión</button>
+            <p id="login-result" class="result"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Status -->
+      <section id="status-card" class="card hidden">
+        <h2>Estado</h2>
+        <dl class="kv">
+          <dt>Cuenta</dt><dd id="st-account">—</dd>
+          <dt>Avisos</dt><dd id="st-fcm">—</dd>
+          <dt>App leída</dt><dd id="st-app">—</dd>
+          <dt>Dispositivo</dt><dd><select id="st-device"></select></dd>
+        </dl>
+        <button id="btn-test" class="btn btn-ghost">Probar llamada</button>
+      </section>
+
+      <!-- Settings -->
+      <section id="settings-card" class="card hidden">
+        <h2>Preferencias</h2>
+        <label class="row">
+          <span>Sonar aunque el sistema esté en silencio</span>
+          <input id="set-force" type="checkbox" />
+        </label>
+        <label class="row">
+          <span>Mostrar vídeo al llamar</span>
+          <input id="set-video" type="checkbox" />
+        </label>
+        <label class="row">
+          <span>Arrancar al iniciar sesión</span>
+          <input id="set-autostart" type="checkbox" />
+        </label>
+        <label class="col">
+          <span>Volumen del tono</span>
+          <input id="set-volume" type="range" min="0" max="1" step="0.05" />
+        </label>
+      </section>
+
+      <section class="card log-card">
+        <h2>Actividad</h2>
+        <pre id="log" class="log"></pre>
+      </section>
+    </main>
+
+    <script src="home.bundle.js"></script>
+  </body>
+</html>
