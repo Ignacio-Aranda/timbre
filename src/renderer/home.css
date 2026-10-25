@@ -73,18 +73,27 @@ body.mica .side {
   border-radius: var(--r-control);
   cursor: pointer;
   text-align: left;
+  transition: background 0.1s linear;
 }
 .nav__item .ico {
   width: 18px;
   height: 18px;
   flex: none;
   color: var(--text-2);
+  transition: color 0.1s linear;
 }
 .nav__item:hover {
   background: var(--control-hover);
 }
 .nav__item.is-active {
   background: var(--control);
+}
+/* Adwaita selects a sidebar row with a filled tint, not a Fluent accent bar. */
+body.is-linux .nav__item.is-active {
+  background: var(--accent-soft);
+}
+body.is-linux .nav__item.is-active::before {
+  display: none;
 }
 /* Fluent selection indicator: an accent bar on the left. */
 .nav__item.is-active::before {
@@ -126,7 +135,8 @@ body.mica .side {
   flex: none;
 }
 .pill.is-on .dot {
-  background: #3bbf6a;
+  background: var(--live);
+  animation: live-pulse 2.6s ease-out infinite;
 }
 .pill.is-mid .dot {
   background: #e0a92b;
@@ -159,10 +169,11 @@ body.mica .side {
   margin-bottom: 20px;
 }
 .view__head h2 {
-  font-size: 21px;
+  font-size: 20px;
+  letter-spacing: -0.015em;
 }
 .view__sub {
-  margin: 3px 0 0;
+  margin: 4px 0 0;
   color: var(--text-2);
   font-size: 13px;
 }
@@ -180,6 +191,11 @@ body.mica .side {
   align-items: center;
   gap: 12px 16px;
   padding: 14px 16px;
+  transition: border-color 0.12s linear, background 0.12s linear;
+}
+/* A live device row lifts gently on hover, the way Settings list rows do. */
+.device:hover {
+  border-color: var(--stroke-strong);
 }
 .device__top {
   display: flex;
@@ -198,7 +214,7 @@ body.mica .side {
   border-radius: 10px;
   flex: none;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: var(--accent-soft);
 }
 .device__icon .ico {
   width: 22px;
@@ -220,7 +236,10 @@ body.mica .side {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #3bbf6a;
+  background: var(--live);
+}
+.device__status:not(.is-off) .dot {
+  animation: live-pulse 2.6s ease-out infinite;
 }
 .device__status.is-off .dot {
   background: var(--text-3);
@@ -276,10 +295,10 @@ body.mica .side {
   place-items: center;
   width: 52px;
   height: 52px;
-  border-radius: 14px;
+  border-radius: 16px;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  margin-bottom: 14px;
+  background: var(--accent-soft);
+  margin-bottom: 16px;
 }
 .empty__mark .ico {
   width: 25px;
@@ -317,11 +336,28 @@ body.mica .side {
   padding: 14px 18px 4px;
 }
 .step {
+  position: relative;
   display: flex;
   gap: 14px;
   padding-bottom: 20px;
 }
+/* A thread linking the steps: this really is a 1 → 2 sequence, and it turns
+   accent as each step is completed, so the line reports progress. */
+.step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 32px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--stroke-strong);
+}
+.step.is-done:not(:last-child)::before {
+  background: var(--accent);
+}
 .step__num {
+  position: relative;
   flex: none;
   width: 26px;
   height: 26px;
@@ -366,12 +402,20 @@ body.mica .side {
   width: 100%;
   padding: 8px 11px;
   background: var(--control);
-  border: 1px solid var(--stroke-strong);
-  border-bottom-width: 1px;
+  border: 1px solid var(--stroke);
+  /* Fluent's resting underline: the bottom edge reads a touch heavier. */
+  border-bottom-color: var(--stroke-strong);
   border-radius: var(--r-control);
   color: var(--text);
   font-family: inherit;
   font-size: 14px;
+  transition: border-color 0.1s linear, background 0.1s linear;
+}
+.field input::placeholder {
+  color: var(--text-3);
+}
+.field input:hover {
+  background: var(--control-hover);
 }
 .field input:focus {
   outline: none;
@@ -411,7 +455,7 @@ body.mica .side {
   height: 38px;
   border-radius: 10px;
   color: #fff;
-  background: #3bbf6a;
+  background: var(--live);
   flex: none;
 }
 .connected__badge .ico {
@@ -456,6 +500,18 @@ body.mica .side {
   accent-color: var(--accent);
 }
 
+/* Adwaita: settings read as a flat "boxed list" — defined by its border and
+   row dividers, with the whole row highlighting on hover, not by elevation. */
+body.is-linux .card {
+  box-shadow: none;
+}
+body.is-linux .pref {
+  padding: 15px 18px;
+}
+body.is-linux .pref:hover {
+  background: var(--control);
+}
+
 /* ---- Log -------------------------------------------------------------- */
 
 .log {
@@ -472,12 +528,14 @@ body.mica .side {
   padding: 7px 10px;
   border-radius: 6px;
   font-size: 13px;
+  transition: background 0.1s linear;
 }
 .log__row:hover {
   background: var(--control);
 }
 .log__time {
   flex: none;
+  width: 68px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
   font-size: 12px;
@@ -490,13 +548,17 @@ body.mica .side {
 .log__row.is-call .log__msg {
   color: var(--text);
 }
+/* Errors carry a danger edge so they're scannable in a long list. */
+.log__row.is-err {
+  box-shadow: inset 2px 0 0 var(--danger);
+}
 .log__row.is-err .log__msg {
   color: var(--danger);
 }
 .log__empty {
   color: var(--text-3);
   text-align: center;
-  padding: 30px;
+  padding: 48px 30px;
   font-size: 13px;
 }
 
